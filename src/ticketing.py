@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_DIR = Path(os.getenv("DB_DIR", BASE_DIR / "data" / "db"))
-DB_PATH = Path(os.getenv("DB_PATH", DB_DIR / "campus.db"))
+DB_PATH = Path(os.getenv("DB_PATH", DB_DIR / "querycampus.db"))
 
 
 @dataclass

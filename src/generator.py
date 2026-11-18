@@ -5,10 +5,16 @@ strict prompt templates to prevent hallucination.
 """
 
 import os
+import sys
 import time
 import requests
 from typing import Dict, Any, Optional, List, Generator
 from dataclasses import dataclass, field
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")

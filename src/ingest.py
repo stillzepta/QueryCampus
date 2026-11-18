@@ -6,9 +6,14 @@ and indexes vectors into ChromaDB.
 """
 
 import os
+import sys
 import glob
 import re
 from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 import requests
@@ -109,17 +114,25 @@ class RecursiveTextSplitter:
         raw_chunks = self.split_text(text)
         chunks: List[DocumentChunk] = []
         safe_source = re.sub(r"[^\w\-.]", "_", source)
+        current_section = "General"
 
         for idx, chunk_text in enumerate(raw_chunks):
             chunk_id = f"{safe_source}:{page}:{idx}"
+            # Extract section heading cleanly (e.g. "SECTION 1: ATTENDANCE REQUIREMENTS")
+            section_match = re.search(r"(SECTION\s+[0-9A-Z]+(?::\s*[^:\n\.\d]+)?)", chunk_text, re.IGNORECASE)
+            if section_match:
+                current_section = section_match.group(1).strip()
+
             meta = {
                 "source": source,
                 "page": page,
+                "section": current_section,
                 "chunk_index": idx,
                 "char_length": len(chunk_text),
             }
             if extra_metadata:
                 meta.update(extra_metadata)
+
 
             chunks.append(
                 DocumentChunk(
