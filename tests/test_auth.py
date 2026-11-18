@@ -1,5 +1,5 @@
 import pytest
-from src.auth import authenticate_user, get_demo_user, User
+from src.auth import authenticate_user, get_demo_user, get_judge_switcher_options, User
 
 def test_student_authentication():
     user = authenticate_user("student@pesu.pes.edu", "password123")
@@ -25,3 +25,12 @@ def test_demo_user_helper():
     assert student.is_student is True
     admin = get_demo_user("admin")
     assert admin.is_admin is True
+    visitor = get_demo_user("visitor")
+    assert visitor.role == "student"
+
+def test_judge_switcher_options():
+    options = get_judge_switcher_options()
+    assert len(options) >= 3
+    keys = [opt["key"] for opt in options]
+    assert "student" in keys
+    assert "admin" in keys
