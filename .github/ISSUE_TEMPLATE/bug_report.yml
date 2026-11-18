@@ -1,0 +1,48 @@
+name: 🐛 Bug Report
+description: Report a bug, retrieval failure, or runtime error in QueryCampus
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide detailed information so the maintainers can reproduce and fix the bug quickly.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps or query that caused the issue.
+      value: |
+        1. Run `streamlit run querycampus/ui/app.py`
+        2. Query: "..."
+        3. See error or incorrect retrieval
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - "Local macOS / Linux (Ollama)"
+        - "Docker Compose"
+        - "Cloud API (Groq)"
+    validations:
+      required: true

@@ -1,0 +1,59 @@
+name: 🎯 Team Task Assignment
+description: Assign or track a milestone task mapped to team roles (PARI, Krishna, Sachita, Amannat)
+title: "[TASK]: "
+labels: ["task", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### QueryCampus Sprint Task Assignment
+        Use this template to track deliverables across the 4-phase hackathon roadmap.
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: Target Role / Track
+      description: Select which engineering domain this task belongs to.
+      options:
+        - "RAG & Data Pipeline (PARI Javeri)"
+        - "LLM & Backend Integrator (Krishna Verma)"
+        - "Full-Stack & UI/UX Developer (Sachita)"
+        - "Integration, Testing & Pitch Lead (Amannat)"
+        - "Cross-Functional / General"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Project Milestone Phase
+      description: Which milestone phase does this task belong to?
+      options:
+        - "Phase 1: Setup & Data Ingestion (Hours 0-6)"
+        - "Phase 2: Core Generation & Backend Hookup (Hours 6-18)"
+        - "Phase 3: Frontend Polish & 'Winning' Features (Hours 18-30)"
+        - "Phase 4: Testing, Containerization & Pitch (Hours 30-36)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description & Objective
+      description: Describe what needs to be done.
+      placeholder: E.g., Implement hybrid search combining cosine similarity and BM25 fallback for low-similarity queries.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Definition of Done (Acceptance Criteria)
+      description: Specific checkpoints that must pass before PR merge.
+      value: |
+        - [ ] Implementation completed and documented
+        - [ ] Unit tests pass with `pytest tests/`
+        - [ ] Verified locally or containerized with Docker
+        - [ ] Code review completed by domain lead
+    validations:
+      required: true

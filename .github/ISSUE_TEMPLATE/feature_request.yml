@@ -1,0 +1,32 @@
+name: 💡 Feature Request
+description: Propose a new feature, optimization, or extension for QueryCampus
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for contributing to QueryCampus! Suggest improvements for the RAG pipeline, LLM generation, or UI.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of the limitation or user problem.
+      placeholder: E.g., The model latency on CPU for complex queries can be optimized using caching or streaming.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Architecture
+      description: Describe your proposed technical approach.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you've considered.

@@ -1,0 +1,23 @@
+# QueryCampus Code Owners & Domain Leads
+# Mapped directly to Hackathon Sprint roles
+
+# Global Fallback
+* @querycampus-maintainers
+
+# Phase 1: RAG & Data Pipeline (PARI Javeri)
+querycampus/pipeline/       @pari-javeri
+data/                       @pari-javeri
+
+# Phase 2: LLM & Backend Integrator (Krishna Verma)
+querycampus/llm/            @krishna-verma
+
+# Phase 3: Full-Stack & UI/UX Developer (Sachita)
+querycampus/ui/             @sachita-ui
+.streamlit/                 @sachita-ui
+
+# Phase 4: Integration, Testing & Pitch Lead (Amannat)
+querycampus/evaluation/     @amannat-lead
+tests/                      @amannat-lead
+Dockerfile                  @amannat-lead
+docker-compose.yml          @amannat-lead
+.github/                    @amannat-lead

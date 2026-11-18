@@ -1,0 +1,33 @@
+================================================================================
+PES UNIVERSITY - EXAMINATION & GRADING REGULATIONS (2025)
+Document ID: PESU-EXAM-EVAL-2025
+================================================================================
+
+SECTION 1: EVALUATION ARCHITECTURE
+1.1 Continuous Internal Assessment (CIA) & End Semester Exam (ESE):
+Assessment consists of Continuous Internal Assessment (50% weightage) and End Semester Examination (50% weightage).
+CIA includes two In-Semester Assessment (ISA) tests (each 20%), home assignments/quizzes (5%), and course project or practical lab evaluations (5%).
+
+1.2 Minimum Passing Thresholds:
+To successfully pass a course, a student must obtain:
+- At least 40% marks in the End Semester Examination (20 out of 50).
+- An aggregate score of at least 45% combining CIA and ESE.
+
+SECTION 2: GRADING SCALE
+Letter Grade | Grade Points | Performance Indicator
+S            | 10           | Outstanding (>=90%)
+A            | 9            | Excellent (80-89%)
+B            | 8            | Very Good (70-79%)
+C            | 7            | Good (60-69%)
+D            | 6            | Fair (50-59%)
+E            | 5            | Pass (45-49%)
+F            | 0            | Fail (<45%)
+NE           | 0            | Not Eligible (Shortage of Attendance <65%)
+
+SECTION 3: GRADE APPEALS & REVALUATION PROCESS
+3.1 Procedure for Answer Script Review:
+Any student wishing to challenge an examination evaluation must apply for a photocopy of the evaluated answer script within 7 calendar days of results declaration via the PESU Student Portal.
+The fee for obtaining an answer book photocopy is INR 500 per course.
+
+3.2 Formal Revaluation:
+Following photocopy inspection, a formal revaluation request can be submitted within 5 working days with a revaluation fee of INR 1,500. If the revaluated grade increases by two letter grades or more, 50% of the revaluation fee is refunded to the student. Grade appeals after the 7-day deadline are strictly not entertained.
