@@ -1,21 +1,27 @@
 """
 Script 2: Chroma Vector Database Manager.
 Manages persistent ChromaDB connection, vector upsert, and cosine similarity search.
+Maintained by: Pari Javeri (RAG & Data Pipeline Engineer)
 """
 
 import os
+import sys
 import time
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import chromadb
 from chromadb.config import Settings
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 from src.ingest import DocumentChunk, EmbeddingClient
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIRECTORY", str(BASE_DIR / "chroma_db"))
-COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "campus_documents")
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "university_docs")
 
 
 class ChromaVectorStore:
@@ -42,7 +48,7 @@ class ChromaVectorStore:
         )
 
     def add_chunks(self, chunks: List[DocumentChunk], batch_size: int = 50) -> int:
-        """Upserts document chunks into Chroma DB with embeddings."""
+        """Upserts document chunks into Chroma DB with embeddings and metadata."""
         if not chunks:
             return 0
 
@@ -68,7 +74,7 @@ class ChromaVectorStore:
     def search(
         self,
         query: str,
-        top_k: int = 2,
+        top_k: int = 3,
         where_filter: Optional[Dict[str, Any]] = None,
     ) -> Tuple[List[Dict[str, Any]], float, float]:
         """
@@ -96,7 +102,7 @@ class ChromaVectorStore:
             for i in range(len(raw["ids"][0])):
                 chunk_id = raw["ids"][0][i]
                 doc_text = raw["documents"][0][i]
-                meta = raw["metadatas"][0][i]
+                meta = raw["metadatas"][0][i] or {}
                 dist = raw["distances"][0][i]
                 sim = max(0.0, min(1.0, 1.0 - dist))
 
@@ -107,6 +113,9 @@ class ChromaVectorStore:
                         "metadata": meta,
                         "distance": dist,
                         "similarity": sim,
+                        "source": meta.get("source", "Unknown"),
+                        "page": int(meta.get("page", 1)),
+                        "section": meta.get("section", "General"),
                     }
                 )
 
