@@ -1,62 +1,102 @@
 # QueryCampus
 
-QueryCampus is an open-source, local-first Virtual University Receptionist and Campus Concierge built with Retrieval-Augmented Generation (RAG).
+> **Virtual University Receptionist & Campus Concierge**  
+> A private, low-latency, retrieval-augmented assistant designed to answer campus inquiries using official institutional documents.
 
-## Architecture & Tech Stack
+---
 
-- **Document Ingestion**: PDF and text document loader with recursive text chunking (800 character chunk size, 80 character overlap).
-- **Vector Storage**: Persistent Chroma vector store using cosine similarity metrics.
-- **Embeddings**: Nomic text embeddings via local Ollama inference, with an offline deterministic fallback.
-- **Generation**: Local LLM routing via Ollama (Gemma, Orca, Qwen) and cloud acceleration via Groq API.
-- **Interface**: Interactive Streamlit web UI with inline source citations and real-time latency breakdown.
-- **Evaluation**: Benchmark suite for retrieval accuracy, response correctness, and latency metrics.
+## 🏗️ Repository Architecture
 
-## Quick Start
+```
+querycampus/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml             # Automated CI: linting & pytest test checks
+│
+├── data/
+│   └── sample_docs/           # Test documents (handbooks, exam rules, timetables)
+│
+├── src/
+│   ├── __init__.py
+│   ├── ingest.py              # Script 1: PDF loading, chunking (RecursiveTextSplitter), & embedding
+│   ├── vector_store.py        # Script 2: ChromaDB connection, vector upsert, and search logic
+│   ├── retrieval.py           # Script 3: Top-k semantic search & context formatting
+│   └── generator.py           # Script 4: LLM integration (Ollama / Groq API) & strict prompting
+│
+├── frontend/
+│   └── app.py                 # Streamlit UI dashboard (chat interface + citation view cards)
+│
+├── notebooks/                 # Rapid prototyping / testing chunk sizes & embeddings
+│   └── rag_experiments.ipynb
+│
+├── .env.example               # Environment variables template
+├── .gitignore                 # Ignores chroma_db/, venv/, __pycache__/, .env
+├── Dockerfile                 # Containerization file for 1-click deployment
+├── docker-compose.yml         # Multi-container orchestration (App + Chroma/Ollama services)
+├── README.md                  # Project overview, setup guide, and team credentials
+└── requirements.txt           # Python dependencies
+```
 
-### 1. Set Up Environment
+---
 
+## 👥 Team Roles & Responsibilities
+
+| Contributor | Track & Role | Core Responsibilities |
+| :--- | :--- | :--- |
+| **PARI Javeri** | **RAG & Data Pipeline Engineer** | Automated document ingestion, `RecursiveTextSplitter` chunking, ChromaDB vector store, and hybrid retrieval. |
+| **Krishna Verma** | **LLM & Backend Integrator** | Model integration (Ollama / Groq API routing), strict context-injection prompt templates, and rolling 3-message session memory. |
+| **Sachita** | **Full-Stack & UI/UX Developer** | Streamlit concierge UI, interactive citation cards displaying source pages/snippets, and quick-prompt suggestion chips. |
+| **Amannat** | **Integration, Testing & Pitch Lead** | End-to-end latency & accuracy benchmarking, Docker containerization, and demonstration pitch. |
+
+---
+
+## ⚡ Quick Start Guide
+
+### 1. Clone & Set Up Virtual Environment
 ```bash
+git clone git@github.com:stillzepta/QueryCampus.git
+cd QueryCampus
+
+# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-pip install -e .
 ```
 
 ### 2. Configure Environment Variables
-
 ```bash
 cp .env.example .env
 ```
 
-### 3. Run Web Application
-
+### 3. Ingest Documents into Vector Store
 ```bash
-streamlit run querycampus/ui/app.py
+python src/ingest.py
 ```
 
-### 4. Run Benchmarks & Tests
-
+### 4. Start the Web Concierge Dashboard
 ```bash
-# Run test suite
+streamlit run frontend/app.py
+```
+
+### 5. Run Test Suite
+```bash
 pytest tests/ -v
-
-# Run evaluation benchmark
-python -m querycampus.evaluation.benchmark --fast
 ```
 
-## Docker Deployment
+---
 
+## 🐳 Docker Deployment
+
+To launch the full stack with 1 click:
 ```bash
 docker compose up --build
 ```
+The Streamlit application will be accessible at `http://localhost:8501`.
 
-## Contributing & Project Structure
+---
 
-- `querycampus/pipeline/`: Ingestion, chunking, embeddings, and vector store.
-- `querycampus/llm/`: Prompts, conversation memory, and model routing.
-- `querycampus/ui/`: Streamlit dashboard and UI components.
-- `querycampus/evaluation/`: Latency and retrieval accuracy benchmarks.
-- `data/documents/`: Campus policy documents and guides.
-- `tests/`: Automated unit tests.
-
-See [CONTRIBUTING.md](file:///Users/zuri/Hackathons/QueryCampus/CONTRIBUTING.md) for team role assignments, branching guidelines, and development workflows.
+## 🔬 Prototyping Notebooks
+Open `notebooks/rag_experiments.ipynb` in VS Code or Jupyter Lab to experiment with chunk sizes, token overlaps, and embedding distances.
