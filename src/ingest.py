@@ -13,7 +13,10 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 import requests
 import numpy as np
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -205,6 +208,11 @@ class DocumentIngestor:
         self.embedding_client = EmbeddingClient()
 
     def load_pdf(self, file_path: str) -> List[DocumentChunk]:
+        if PdfReader is None:
+            txt_equiv = Path(file_path).with_suffix(".txt")
+            if txt_equiv.exists():
+                return self.load_text_file(str(txt_equiv))
+            return []
         reader = PdfReader(file_path)
         chunks: List[DocumentChunk] = []
         source_name = Path(file_path).name

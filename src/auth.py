@@ -27,9 +27,16 @@ class User:
 
 # Pre-configured institutional mock users for easy demonstration
 MOCK_USERS: Dict[str, Dict[str, str]] = {
+    "serina.mehra@bosscoder.edu": {
+        "password": "password123",
+        "name": "Serina Mehra",
+        "role": "student",
+        "department": "Computer Science & Engineering",
+        "id_number": "BC-2024-CS108",
+    },
     "student@pesu.pes.edu": {
         "password": "password123",
-        "name": "Alex Sharma",
+        "name": "Serina Mehra",
         "role": "student",
         "department": "Computer Science & Engineering",
         "id_number": "PES2UG22CS001",
@@ -39,7 +46,7 @@ MOCK_USERS: Dict[str, Dict[str, str]] = {
         "name": "Dr. V. Ramanathan (Registrar Desk)",
         "role": "admin",
         "department": "Office of Academic Affairs & Administration",
-        "id_number": "ADM-PES-042",
+        "id_number": "ADM-BOS-042",
     },
     "guest@pesu.pes.edu": {
         "password": "guest",
@@ -75,12 +82,11 @@ def authenticate_user(identifier: str, password: str) -> Optional[User]:
 def get_demo_user(role: str = "student") -> User:
     """Convenience helper to retrieve default student or admin user."""
     if role == "admin":
-        data = MOCK_USERS["admin@pesu.pes.edu"]
         email = "admin@pesu.pes.edu"
     else:
-        data = MOCK_USERS["student@pesu.pes.edu"]
-        email = "student@pesu.pes.edu"
+        email = "serina.mehra@bosscoder.edu"
 
+    data = MOCK_USERS[email]
     return User(
         email=email,
         name=data["name"],
