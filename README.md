@@ -1,7 +1,7 @@
 # QueryCampus
 
 > **Virtual University Receptionist & Campus Concierge**  
-> A private, low-latency, retrieval-augmented assistant designed to answer campus inquiries using official institutional documents.
+> A private, low-latency, retrieval-augmented assistant designed to answer campus inquiries using official institutional documents, featuring role-based access control and automated ticket escalation.
 
 ---
 
@@ -12,57 +12,67 @@ querycampus/
 │
 ├── .github/
 │   └── workflows/
-│       └── ci.yml             # Automated CI: linting & pytest test checks
+│       └── ci.yml                 # Linting and automated build checks
 │
 ├── data/
-│   └── sample_docs/           # Test documents (handbooks, exam rules, timetables)
+│   ├── sample_docs/               # Official PDF handbooks, exam guidelines, hostel rules
+│   └── db/                        # SQLite storage for tickets and user sessions
 │
 ├── src/
 │   ├── __init__.py
-│   ├── ingest.py              # Script 1: PDF loading, chunking (RecursiveTextSplitter), & embedding
-│   ├── vector_store.py        # Script 2: ChromaDB connection, vector upsert, and search logic
-│   ├── retrieval.py           # Script 3: Top-k semantic search & context formatting
-│   └── generator.py           # Script 4: LLM integration (Ollama / Groq API) & strict prompting
+│   ├── auth.py                    # Mock institutional login & role-based access control (Student vs. Admin)
+│   ├── ingest.py                  # PDF loading, recursive chunking, and nomic-embed-text embedding
+│   ├── vector_store.py            # ChromaDB persistence and semantic cosine similarity search
+│   ├── retrieval.py               # Top-k context retrieval and fallback confidence checks
+│   ├── generator.py               # LLM inference (Groq/Ollama) with strict prompt grounding
+│   └── ticketing.py               # Automated ticket generation for lost & found / admin escalations
 │
 ├── frontend/
-│   └── app.py                 # Streamlit UI dashboard (chat interface + citation view cards)
+│   └── app.py                     # Streamlit UI (Auth sidebar, Chat interface, Citation cards, Admin Dashboard)
 │
-├── notebooks/                 # Rapid prototyping / testing chunk sizes & embeddings
-│   └── rag_experiments.ipynb
+├── notebooks/
+│   └── rag_experiments.ipynb      # Prototyping chunk sizes and vector retrieval metrics
 │
-├── .env.example               # Environment variables template
-├── .gitignore                 # Ignores chroma_db/, venv/, __pycache__/, .env
-├── Dockerfile                 # Containerization file for 1-click deployment
-├── docker-compose.yml         # Multi-container orchestration (App + Chroma/Ollama services)
-├── README.md                  # Project overview, setup guide, and team credentials
-└── requirements.txt           # Python dependencies
+├── .env.example                   # Environment configuration template (API keys, model selection)
+├── .gitignore                     # Ignore chroma_db/, venv/, __pycache__/, *.db, .env
+├── Dockerfile                     # Containerization for 1-click deployment
+├── docker-compose.yml             # Multi-service orchestration (App + Chroma)
+├── README.md                      # Project documentation and setup guide
+└── requirements.txt               # Python package dependencies
 ```
 
 ---
 
-## 👥 Team Roles & Responsibilities
+## 🔑 Key Capabilities
 
-| Contributor | Track & Role | Core Responsibilities |
-| :--- | :--- | :--- |
-| **PARI Javeri** | **RAG & Data Pipeline Engineer** | Automated document ingestion, `RecursiveTextSplitter` chunking, ChromaDB vector store, and hybrid retrieval. |
-| **Krishna Verma** | **LLM & Backend Integrator** | Model integration (Ollama / Groq API routing), strict context-injection prompt templates, and rolling 3-message session memory. |
-| **Sachita** | **Full-Stack & UI/UX Developer** | Streamlit concierge UI, interactive citation cards displaying source pages/snippets, and quick-prompt suggestion chips. |
-| **Amannat** | **Integration, Testing & Pitch Lead** | End-to-end latency & accuracy benchmarking, Docker containerization, and demonstration pitch. |
+1. **RAG Campus Information Retrieval**:
+   - Chunks official university documents with `RecursiveTextSplitter` (800-character chunks, 80-character overlap).
+   - Generates high-dimensional embeddings via `nomic-embed-text` with persistent ChromaDB storage and cosine similarity retrieval.
+   - Evaluates retrieval confidence with automated low-confidence fallback alerting.
+
+2. **Role-Based Access Control (RBAC)**:
+   - **Student Role**: Accesses campus concierge chatbot, quick-prompt chips, inline source citation cards, and personal support ticket submission & tracking.
+   - **Administrator Role**: Unlocks the **Admin Dashboard** to review escalated tickets across departments (Lost & Found, Facilities, Fees), manage ticket statuses, and re-index the Chroma knowledge base.
+
+3. **Automated Ticket Escalation**:
+   - Detects queries requiring human administrative action (e.g., lost ID cards, hostel maintenance, fee disputes).
+   - Backed by persistent SQLite storage (`data/db/campus.db`).
+
+4. **Multi-Model Support**:
+   - Fully local, offline inference using Ollama (`gemma3:4b`, `orca-mini`, `qwen3.5:4b`).
+   - Cloud acceleration support via Groq API for sub-second responses.
 
 ---
 
 ## ⚡ Quick Start Guide
 
-### 1. Clone & Set Up Virtual Environment
+### 1. Set Up Environment
 ```bash
 git clone git@github.com:stillzepta/QueryCampus.git
 cd QueryCampus
 
-# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -71,32 +81,35 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-### 3. Ingest Documents into Vector Store
+### 3. Ingest Institutional Documents
 ```bash
 python src/ingest.py
 ```
 
-### 4. Start the Web Concierge Dashboard
+### 4. Start the Application
 ```bash
 streamlit run frontend/app.py
 ```
 
-### 5. Run Test Suite
+### 5. Run Unit Tests
 ```bash
 pytest tests/ -v
 ```
 
 ---
 
-## 🐳 Docker Deployment
+## 👥 Demo Institutional Credentials
 
-To launch the full stack with 1 click:
-```bash
-docker compose up --build
-```
-The Streamlit application will be accessible at `http://localhost:8501`.
+| Role | Email | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Student** | `student@pesu.pes.edu` | `password123` | Concierge Chat, Citations, Ticket Submission |
+| **Administrator** | `admin@pesu.pes.edu` | `adminpassword` | Admin Ticket Dashboard, KB Re-indexing, Full Access |
 
 ---
 
-## 🔬 Prototyping Notebooks
-Open `notebooks/rag_experiments.ipynb` in VS Code or Jupyter Lab to experiment with chunk sizes, token overlaps, and embedding distances.
+## 🐳 Docker Deployment
+
+```bash
+docker compose up --build
+```
+The application will be live at `http://localhost:8501`.

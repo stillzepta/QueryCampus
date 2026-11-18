@@ -1,7 +1,6 @@
 """
 Script 3: Retrieval Engine & Context Formatting.
-Performs top-k semantic search with keyword fallback and formats retrieved
-contexts for strict LLM prompt injection.
+Performs top-k semantic search with keyword fallback and fallback confidence checks.
 """
 
 from typing import List, Dict, Any, Optional, Tuple
@@ -11,9 +10,15 @@ from src.vector_store import ChromaVectorStore
 
 
 class CampusRetriever:
-    def __init__(self, vector_store: ChromaVectorStore, keyword_weight: float = 0.25):
+    def __init__(
+        self,
+        vector_store: ChromaVectorStore,
+        keyword_weight: float = 0.25,
+        confidence_threshold: float = 0.40,
+    ):
         self.vector_store = vector_store
         self.keyword_weight = keyword_weight
+        self.confidence_threshold = confidence_threshold
 
     def _keyword_score(self, query: str, document: str) -> float:
         stop_words = {"the", "is", "at", "which", "on", "a", "an", "and", "or", "in", "for", "to", "of", "what", "where", "how"}
@@ -57,7 +62,32 @@ class CampusRetriever:
             scored.append(item)
 
         scored.sort(key=lambda x: x["hybrid_score"], reverse=True)
-        return scored[:top_k], embed_t, ret_t
+        top_hits = scored[:top_k]
+
+        return top_hits, embed_t, ret_t
+
+    def check_confidence(self, hits: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Performs fallback confidence check on retrieved context.
+        If confidence is low, alerts the system to recommend an administrative ticket escalation.
+        """
+        if not hits:
+            return {
+                "is_confident": False,
+                "top_score": 0.0,
+                "threshold": self.confidence_threshold,
+                "reason": "No document chunks retrieved",
+            }
+
+        top_similarity = hits[0].get("similarity", 0.0)
+        is_confident = top_similarity >= self.confidence_threshold
+
+        return {
+            "is_confident": is_confident,
+            "top_score": top_similarity,
+            "threshold": self.confidence_threshold,
+            "reason": "Sufficient semantic alignment" if is_confident else "Low semantic match confidence",
+        }
 
     def format_context(self, hits: List[Dict[str, Any]]) -> str:
         """Formats retrieved chunks with citations for LLM prompt injection."""
