@@ -4,7 +4,8 @@ Module: src/backend_interface.py
 Author: Krishna Verma (LLM & Backend Integrator)
 
 Provides a clean, unified contract for Sachita's Streamlit frontend (frontend/app.py).
-Encapsulates all internal ChromaDB, Ollama/Groq routing, vision parsing, and SQLite ticketing logic.
+Encapsulates all internal ChromaDB, Ollama/Groq routing, vision parsing, and SQLite ticketing logic,
+backed by Supabase cloud identity, institutional domain checks, and Role-Based Access Control (RBAC).
 """
 
 import os
@@ -20,7 +21,16 @@ if str(BASE_DIR) not in sys.path:
 from src.retrieval import retrieve_context, CampusRetriever, CONFIDENCE_THRESHOLD
 from src.generator import CampusGenerator
 from src.ticketing import TicketingSystem, Ticket
+from src.auth import (
+    init_auth_db,
+    is_valid_institutional_domain,
+    require_role,
+    verify_role,
+    DEFAULT_STUDENT_SESSION,
+)
 
+# Initialize database tables
+init_auth_db()
 
 # Singleton backend instances
 _generator = CampusGenerator()
@@ -64,6 +74,11 @@ def process_student_turn(
     """
     t_start = time.perf_counter()
     clean_query = query.strip()
+
+    # Domain & Session Check
+    user_email = user_session.get("email", "")
+    is_verified = user_session.get("verified", True)
+    is_institutional = is_valid_institutional_domain(user_email)
 
     # Step 1: Multi-modal Vision Parsing (Notice board, map, schedule)
     visual_text: Optional[str] = None
@@ -148,7 +163,7 @@ def create_escalation_ticket(
     user_session: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Submits an official ticket to SQLite (data/db/querycampus.db).
+    Submits an official ticket to SQLite and Supabase cloud.
     """
     user_email = user_session.get("email", "student@pesu.pes.edu")
     user_name = user_session.get("name", "Student User")
@@ -164,6 +179,7 @@ def create_escalation_ticket(
         title=title,
         description=desc,
         priority=priority,
+        user_session=user_session,
     )
 
     return {
@@ -175,9 +191,12 @@ def create_escalation_ticket(
     }
 
 
-def get_student_tickets(user_email: str) -> List[Dict[str, Any]]:
+def get_student_tickets(
+    user_email: str,
+    user_session: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     """Retrieves all tickets submitted by a student."""
-    tickets = _ticketing.get_user_tickets(user_email)
+    tickets = _ticketing.get_user_tickets(user_email, user_session=user_session)
     return [
         {
             "id": t.id,
@@ -194,9 +213,18 @@ def get_student_tickets(user_email: str) -> List[Dict[str, Any]]:
     ]
 
 
-def get_admin_tickets(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Retrieves all tickets for the Administrator dashboard."""
-    tickets = _ticketing.get_all_tickets(status_filter=status_filter)
+def get_admin_tickets(
+    status_filter: Optional[str] = None,
+    user_session: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Retrieves all tickets for the Administrator dashboard.
+    Enforces Administrator RBAC if user_session is provided.
+    """
+    if user_session is not None:
+        require_role(user_session, "Admin")
+
+    tickets = _ticketing.get_all_tickets(status_filter=status_filter, user_session=user_session)
     return [
         {
             "id": t.id,
@@ -215,6 +243,22 @@ def get_admin_tickets(status_filter: Optional[str] = None) -> List[Dict[str, Any
     ]
 
 
-def update_admin_ticket(ticket_id: int, new_status: str, admin_notes: Optional[str] = None) -> bool:
-    """Updates ticket status and official administrative remarks."""
-    return _ticketing.update_ticket_status(ticket_id, new_status, admin_notes)
+def update_admin_ticket(
+    ticket_id: int,
+    new_status: str,
+    admin_notes: Optional[str] = None,
+    user_session: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """
+    Updates ticket status and official administrative remarks.
+    Enforces Administrator RBAC if user_session is provided.
+    """
+    if user_session is not None:
+        require_role(user_session, "Admin")
+
+    return _ticketing.update_ticket_status(
+        ticket_id=ticket_id,
+        new_status=new_status,
+        admin_notes=admin_notes,
+        user_session=user_session,
+    )

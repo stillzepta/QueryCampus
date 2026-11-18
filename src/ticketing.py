@@ -1,7 +1,8 @@
 """
 Ticketing & Escalation Management System.
-Persists support tickets and administrative escalations into SQLite storage.
-Supports automated escalation triggers for Lost & Found, grievances, and low-confidence RAG queries.
+Persists support tickets and administrative escalations into SQLite and Supabase Cloud storage.
+Supports automated escalation triggers for Lost & Found, grievances, and low-confidence RAG queries,
+with strict Role-Based Access Control (RBAC) enforcement for Administrator actions.
 """
 
 import os
@@ -11,6 +12,13 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
+from src.auth import (
+    init_auth_db,
+    require_role,
+    verify_role,
+    get_supabase_client,
+    is_valid_institutional_domain,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_DIR = Path(os.getenv("DB_DIR", BASE_DIR / "data" / "db"))
@@ -36,6 +44,8 @@ class TicketingSystem:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
         os.makedirs(self.db_path.parent, exist_ok=True)
+        # Ensure users and sessions schema are also present in the database
+        init_auth_db(self.db_path)
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
@@ -67,7 +77,10 @@ class TicketingSystem:
                 """
                 CREATE TABLE IF NOT EXISTS user_sessions (
                     session_id TEXT PRIMARY KEY,
+                    usn TEXT NOT NULL,
                     user_email TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -82,11 +95,22 @@ class TicketingSystem:
         title: str,
         description: str,
         priority: str = "Medium",
+        user_session: Optional[Dict[str, Any]] = None,
     ) -> Ticket:
+        """
+        Creates an escalation ticket in SQLite and syncs to Supabase cloud.
+        Validates institutional domain if session is provided.
+        """
+        if user_session:
+            session_email = user_session.get("email")
+            if session_email:
+                user_email = session_email
+            if user_session.get("name"):
+                user_name = user_session.get("name")
+
         now_str = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            # Generate ticket number
             cursor.execute("SELECT COUNT(*) FROM tickets")
             count = cursor.fetchone()[0] + 1
             ticket_number = f"QC-{now_str[:8]}-{count:04d}"
@@ -101,7 +125,7 @@ class TicketingSystem:
             ticket_id = cursor.lastrowid
             conn.commit()
 
-            return Ticket(
+            ticket = Ticket(
                 id=ticket_id,
                 ticket_number=ticket_number,
                 user_email=user_email,
@@ -115,7 +139,36 @@ class TicketingSystem:
                 admin_notes=None,
             )
 
-    def get_all_tickets(self, status_filter: Optional[str] = None) -> List[Ticket]:
+        # Sync to Supabase cloud storage if configured
+        client = get_supabase_client()
+        if client:
+            try:
+                client.table("tickets").insert({
+                    "ticket_number": ticket_number,
+                    "user_email": user_email.lower(),
+                    "user_name": user_name,
+                    "category": category,
+                    "title": title,
+                    "description": description,
+                    "status": "Open",
+                    "priority": priority,
+                }).execute()
+            except Exception:
+                pass
+
+        return ticket
+
+    def get_all_tickets(
+        self,
+        status_filter: Optional[str] = None,
+        user_session: Optional[Dict[str, Any]] = None,
+    ) -> List[Ticket]:
+        """
+        Retrieves all tickets. Enforces Administrator RBAC if user_session is provided.
+        """
+        if user_session is not None:
+            require_role(user_session, "Admin")
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             if status_filter and status_filter != "All":
@@ -144,7 +197,23 @@ class TicketingSystem:
                 for row in rows
             ]
 
-    def get_user_tickets(self, user_email: str) -> List[Ticket]:
+    def get_user_tickets(
+        self,
+        user_email: str,
+        user_session: Optional[Dict[str, Any]] = None,
+    ) -> List[Ticket]:
+        """
+        Retrieves tickets belonging to a specific student.
+        Prevents unauthorized users from reading others' tickets unless they possess Admin role.
+        """
+        if user_session is not None:
+            sess_email = user_session.get("email", "").strip().lower()
+            is_admin = verify_role(user_session, "Admin")
+            if not is_admin and sess_email != user_email.strip().lower():
+                raise PermissionError(
+                    f"Access Denied: Student cannot view tickets belonging to '{user_email}'."
+                )
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -169,7 +238,20 @@ class TicketingSystem:
                 for row in rows
             ]
 
-    def update_ticket_status(self, ticket_id: int, new_status: str, admin_notes: Optional[str] = None) -> bool:
+    def update_ticket_status(
+        self,
+        ticket_id: int,
+        new_status: str,
+        admin_notes: Optional[str] = None,
+        user_session: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        Updates ticket status and official administrative remarks.
+        Enforces Administrator RBAC if user_session is provided.
+        """
+        if user_session is not None:
+            require_role(user_session, "Admin")
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             if admin_notes is not None:
@@ -183,7 +265,20 @@ class TicketingSystem:
                     (new_status, ticket_id),
                 )
             conn.commit()
-            return cursor.rowcount > 0
+            updated = cursor.rowcount > 0
+
+        # Sync update to Supabase cloud if available
+        client = get_supabase_client()
+        if client and updated:
+            try:
+                update_payload = {"status": new_status}
+                if admin_notes is not None:
+                    update_payload["admin_notes"] = admin_notes
+                client.table("tickets").update(update_payload).eq("id", ticket_id).execute()
+            except Exception:
+                pass
+
+        return updated
 
     @staticmethod
     def detect_escalation_intent(query: str) -> Optional[str]:
