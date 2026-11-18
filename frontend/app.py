@@ -2,8 +2,9 @@
 QueryCampus: Virtual University Receptionist & Campus Concierge.
 Streamlit UI Dashboard featuring:
 - Role-based Authentication Sidebar (Student vs. Administrator)
-- Interactive Chat Interface with rolling memory
+- Interactive Chat Interface powered by backend_interface facade
 - Inline Source Citation Cards with similarity scores
+- Multi-modal Notice Board & Map image parser
 - Automated Ticket Escalation (Lost & Found, Grievances, Low Confidence)
 - Administrative Ticket Management & Knowledge Base Dashboard
 """
@@ -16,9 +17,13 @@ import streamlit as st
 from src.auth import authenticate_user, get_demo_user, User
 from src.ingest import DocumentIngestor, SAMPLE_DOCS_DIR
 from src.vector_store import ChromaVectorStore
-from src.retrieval import CampusRetriever
-from src.generator import CampusGenerator, ConversationMemory
-from src.ticketing import TicketingSystem
+from src.backend_interface import (
+    process_student_turn,
+    create_escalation_ticket,
+    get_student_tickets,
+    get_admin_tickets,
+    update_admin_ticket,
+)
 
 
 st.set_page_config(
@@ -128,28 +133,28 @@ def init_system():
         chunks = ingestor.load_directory()
         if chunks:
             store.add_chunks(chunks)
-    retriever = CampusRetriever(store)
-    generator = CampusGenerator()
-    ticketing = TicketingSystem()
-    return store, retriever, generator, ticketing
+    return store
 
 
-store, retriever, generator, ticketing = init_system()
+store = init_system()
 
 # User Session Management
 if "user" not in st.session_state:
     st.session_state.user = get_demo_user(role="student")
 
-if "memory" not in st.session_state:
-    st.session_state.memory = ConversationMemory(max_turns=3)
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "assistant",
-            "content": f"Hello **{st.session_state.user.name}**! I am **QueryCampus**, your official Virtual University Concierge. Ask me about regulations, fees, hostel curfew, exam policies, or campus facilities.",
-            "sources": [],
-            "latency": None,
+            "content": f"Hello **{st.session_state.user.name}**! I am **QueryCampus**, your official Virtual University Concierge. Ask me about academic regulations, fees, hostel rules, exam procedures, office locations, or upload a photo of a notice board.",
+            "citations": [],
+            "latency_ms": None,
+            "mode_used": None,
+            "confidence_score": None,
+            "ticket_draft": None,
         }
     ]
 
@@ -204,10 +209,12 @@ with st.sidebar:
 
     st.markdown("---")
     st.subheader("⚙️ System Control")
-    models = generator.list_available_models()
-    selected_model = st.selectbox("🧠 Generative Model", options=models, index=0)
-    use_groq = st.checkbox("⚡ Cloud Groq Acceleration", value=False)
-    top_k = st.slider("🔍 Top-k Document Retrieval", min_value=1, max_value=5, value=2)
+    inference_mode = st.radio(
+        "🧠 Inference Route",
+        options=["groq", "ollama"],
+        index=0,
+        format_func=lambda x: "⚡ Groq Cloud (Sub-second)" if x == "groq" else "🔒 Ollama Local (Private)",
+    )
 
     st.markdown("---")
     st.subheader("📁 Knowledge Base")
@@ -238,13 +245,16 @@ with st.sidebar:
                 st.rerun()
 
     if st.button("🗑️ Reset Chat"):
-        st.session_state.memory.clear()
+        st.session_state.chat_history = []
         st.session_state.messages = [
             {
                 "role": "assistant",
                 "content": f"Chat history cleared. How can I help you, {curr_user.name}?",
-                "sources": [],
-                "latency": None,
+                "citations": [],
+                "latency_ms": None,
+                "mode_used": None,
+                "confidence_score": None,
+                "ticket_draft": None,
             }
         ]
         st.rerun()
@@ -299,39 +309,43 @@ with tab_chat:
         if st.button("🔍 Lost ID Card Escalation", use_container_width=True):
             quick_query = "I lost my university student ID card. What should I do?"
 
+    # Optional multi-modal notice board image upload
+    with st.expander("📸 Upload Physical Notice Board / Exam Seating / Map Photo (Optional)", expanded=False):
+        uploaded_notice_img = st.file_uploader(
+            "Upload image to analyze and cross-reference with campus regulations",
+            type=["png", "jpg", "jpeg"],
+            key="notice_uploader",
+        )
+
     # Render Chat History
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-            if msg.get("latency"):
-                lat = msg["latency"]
+            if msg.get("latency_ms"):
+                conf_pct = (msg.get("confidence_score") or 0.0) * 100
                 st.markdown(
                     f"""
                     <div>
-                        <span class="metric-pill">⚡ Embed: <strong>{lat['embed']:.3f}s</strong></span>
-                        <span class="metric-pill">🔍 Retrieve: <strong>{lat['retrieval']:.3f}s</strong></span>
-                        <span class="metric-pill">🧠 Gen: <strong>{lat['gen']:.3f}s</strong></span>
-                        <span class="metric-pill">⏱️ Total: <strong>{lat['total']:.3f}s</strong></span>
+                        <span class="metric-pill">⏱️ Latency: <strong>{msg['latency_ms']} ms</strong></span>
+                        <span class="metric-pill">🧠 Mode: <strong>{msg.get('mode_used', 'LLM')}</strong></span>
+                        <span class="metric-pill">🎯 Confidence: <strong>{conf_pct:.1f}%</strong></span>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-            if msg.get("sources"):
-                with st.expander(f"📑 Official Citation Cards ({len(msg['sources'])} sources)", expanded=False):
-                    for i, src in enumerate(msg["sources"], start=1):
-                        sim = src.get("similarity", 0.0) * 100
-                        doc_name = src.get("metadata", {}).get("source", "Campus Doc")
-                        page = src.get("metadata", {}).get("page", 1)
+            if msg.get("citations"):
+                with st.expander(f"📑 Official Citation Cards ({len(msg['citations'])} sources)", expanded=False):
+                    for i, src in enumerate(msg["citations"], start=1):
                         st.markdown(
                             f"""
                             <div class="citation-card">
                                 <div class="citation-header">
-                                    <span>📄 Source {i}: {doc_name} (Page {page})</span>
-                                    <span class="citation-badge">Cosine Match: {sim:.1f}%</span>
+                                    <span>📄 Source {i}: {src.get('source')} (Page {src.get('page')})</span>
+                                    <span class="citation-badge">Section: {src.get('section', 'General')}</span>
                                 </div>
-                                <div style="font-size:0.82rem; color:#475569;">{src.get("text", "")}</div>
+                                <div style="font-size:0.82rem; color:#475569;">{src.get('snippet', '')}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
@@ -341,106 +355,94 @@ with tab_chat:
     active_query = quick_query or user_query
 
     if active_query:
+        # Append to UI and chat history
         st.session_state.messages.append({"role": "user", "content": active_query})
+        st.session_state.chat_history.append({"role": "user", "content": active_query})
         with st.chat_message("user"):
             st.markdown(active_query)
 
         with st.chat_message("assistant"):
-            with st.spinner("Retrieving verified university records..."):
-                t_start = time.perf_counter()
-                hits, emb_t, ret_t = retriever.retrieve(active_query, top_k=top_k)
-                confidence_info = retriever.check_confidence(hits)
-                context = retriever.format_context(hits)
-                history_text = st.session_state.memory.get_history_text()
-
-                res = generator.generate(
-                    query=active_query,
-                    context=context,
-                    history_str=history_text,
-                    model=selected_model,
-                    use_groq=use_groq,
-                )
-
-                total_t = time.perf_counter() - t_start
-                latency_info = {
-                    "embed": emb_t,
-                    "retrieval": ret_t,
-                    "gen": res["latency"],
-                    "total": total_t,
+            with st.spinner("Processing inquiry via QueryCampus backend..."):
+                img_bytes = uploaded_notice_img.getvalue() if uploaded_notice_img else None
+                user_session = {
+                    "name": curr_user.name,
+                    "email": curr_user.email,
+                    "role": curr_user.role,
+                    "id_number": curr_user.id_number,
                 }
 
-                st.session_state.memory.add_turn(
+                # Single unified facade call to Krishna's backend
+                turn_result = process_student_turn(
                     query=active_query,
-                    response=res["text"],
-                    sources=hits,
+                    user_session=user_session,
+                    chat_history=st.session_state.chat_history,
+                    inference_mode=inference_mode,
+                    uploaded_image=img_bytes,
                 )
 
+                st.session_state.chat_history.append({"role": "assistant", "content": turn_result["answer"]})
                 st.session_state.messages.append(
                     {
                         "role": "assistant",
-                        "content": res["text"],
-                        "sources": hits,
-                        "latency": latency_info,
+                        "content": turn_result["answer"],
+                        "citations": turn_result["citations"],
+                        "latency_ms": turn_result["latency_ms"],
+                        "mode_used": turn_result["mode_used"],
+                        "confidence_score": turn_result["confidence_score"],
+                        "ticket_draft": turn_result.get("ticket_draft"),
                     }
                 )
 
-                st.markdown(res["text"])
+                st.markdown(turn_result["answer"])
 
+                conf_pct = turn_result["confidence_score"] * 100
                 st.markdown(
                     f"""
                     <div>
-                        <span class="metric-pill">⚡ Embed: <strong>{emb_t:.3f}s</strong></span>
-                        <span class="metric-pill">🔍 Retrieve: <strong>{ret_t:.3f}s</strong></span>
-                        <span class="metric-pill">🧠 Gen: <strong>{res['latency']:.3f}s</strong></span>
-                        <span class="metric-pill">⏱️ Total: <strong>{total_t:.3f}s</strong></span>
+                        <span class="metric-pill">⏱️ Latency: <strong>{turn_result['latency_ms']} ms</strong></span>
+                        <span class="metric-pill">🧠 Mode: <strong>{turn_result['mode_used']}</strong></span>
+                        <span class="metric-pill">🎯 Confidence: <strong>{conf_pct:.1f}%</strong></span>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-                # Automated Escalation Intent Detection & Confidence Alert
-                detected_category = ticketing.detect_escalation_intent(active_query)
-                if detected_category or not confidence_info["is_confident"]:
-                    cat_name = detected_category or "Administrative Inquiry"
+                # Automated Department Escalation Prompt
+                if turn_result["requires_ticket"] and turn_result.get("ticket_draft"):
+                    draft = turn_result["ticket_draft"]
                     st.markdown(
                         f"""
                         <div class="escalation-box">
-                            <strong>⚠️ Department Escalation Available:</strong><br>
-                            Your inquiry involves <em>{cat_name}</em>. If the official document records do not completely resolve your situation, you can immediately file an official support ticket.
+                            <strong>⚠️ Official Escalation Recommended:</strong><br>
+                            This matter involves <em>{draft['category']}</em> or requires verified department action.
                         </div>
                         """,
                         unsafe_allow_html=True,
                     )
-                    with st.expander(f"🎫 Open Official {cat_name} Ticket", expanded=False):
+                    with st.expander(f"🎫 File Official {draft['category']} Ticket", expanded=False):
                         with st.form(f"ticket_quick_{int(time.time())}"):
-                            t_title = st.text_input("Ticket Title", value=f"Inquiry regarding: {active_query[:50]}")
-                            t_desc = st.text_area("Detailed Description", value=f"Student inquiry: {active_query}")
+                            t_title = st.text_input("Ticket Summary", value=draft["summary"])
+                            t_desc = st.text_area("Inquiry Details", value=draft["query_text"])
                             t_prio = st.selectbox("Priority", ["Medium", "High", "Critical", "Low"])
-                            if st.form_submit_button("Submit Official Ticket"):
-                                created = ticketing.create_ticket(
-                                    user_email=curr_user.email,
-                                    user_name=curr_user.name,
-                                    category=cat_name,
-                                    title=t_title,
-                                    description=t_desc,
-                                    priority=t_prio,
+                            if st.form_submit_button("Submit Ticket to Department"):
+                                created = create_escalation_ticket(
+                                    ticket_data={"category": draft["category"], "summary": t_title, "query_text": t_desc, "priority": t_prio},
+                                    user_session=user_session,
                                 )
-                                st.success(f"Ticket {created.ticket_number} created successfully! Track it in the Tickets tab.")
+                                st.success(f"Ticket {created['ticket_number']} submitted! Track it in the Tickets tab.")
 
-                if hits:
-                    with st.expander(f"📑 Official Citation Cards ({len(hits)} sources)", expanded=True):
-                        for i, src in enumerate(hits, start=1):
-                            sim = src.get("similarity", 0.0) * 100
-                            doc_name = src.get("metadata", {}).get("source", "Campus Doc")
-                            page = src.get("metadata", {}).get("page", 1)
+                # Citations
+                if turn_result["citations"]:
+                    with st.expander(f"📑 Official Citation Cards ({len(turn_result['citations'])} sources)", expanded=True):
+                        for i, src in enumerate(turn_result["citations"], start=1):
                             st.markdown(
                                 f"""
                                 <div class="citation-card">
                                     <div class="citation-header">
-                                        <span>📄 Source {i}: {doc_name} (Page {page})</span>
-                                        <span class="citation-badge">Cosine Match: {sim:.1f}%</span>
+                                        <span>📄 Source {i}: {src.get('source')} (Page {src.get('page')})</span>
+                                        <span class="citation-badge">Section: {src.get('section', 'General')}</span>
                                     </div>
-                                    <div style="font-size:0.82rem; color:#475569;">{src.get("text", "")}</div>
+                                    <div style="font-size:0.82rem; color:#475569;">{src.get('snippet', '')}</div>
                                 </div>
                                 """,
                                 unsafe_allow_html=True,
@@ -459,30 +461,35 @@ with tab_tickets:
         with col_f1:
             status_filter = st.selectbox("Filter Status", ["All", "Open", "In Review", "Resolved", "Closed"])
         with col_f2:
-            st.metric("Total Tickets", len(ticketing.get_all_tickets()))
+            all_tkts = get_admin_tickets(status_filter=None)
+            st.metric("Total System Tickets", len(all_tkts))
 
-        all_tickets = ticketing.get_all_tickets(status_filter=status_filter)
-        if not all_tickets:
+        filtered_tickets = get_admin_tickets(status_filter=status_filter)
+        if not filtered_tickets:
             st.info("No tickets match the selected status.")
         else:
-            for t in all_tickets:
-                with st.expander(f"[{t.ticket_number}] {t.category}: {t.title} ({t.status}) - Priority: {t.priority}"):
-                    st.write(f"**Submitted By:** {t.user_name} ({t.user_email})")
-                    st.write(f"**Created At:** {t.created_at}")
-                    st.write(f"**Details:** {t.description}")
-                    if t.admin_notes:
-                        st.info(f"**Admin Remarks:** {t.admin_notes}")
+            for t in filtered_tickets:
+                with st.expander(f"[{t['ticket_number']}] {t['category']}: {t['title']} ({t['status']}) - Priority: {t['priority']}"):
+                    st.write(f"**Submitted By:** {t['user_name']} ({t['user_email']})")
+                    st.write(f"**Created At:** {t['created_at']}")
+                    st.write(f"**Details:** {t['description']}")
+                    if t.get("admin_notes"):
+                        st.info(f"**Admin Remarks:** {t['admin_notes']}")
 
-                    with st.form(f"update_ticket_{t.id}"):
+                    with st.form(f"update_ticket_{t['id']}"):
                         c_u1, c_u2 = st.columns([1, 2])
                         with c_u1:
-                            new_st = st.selectbox("Update Status", ["Open", "In Review", "Resolved", "Closed"], index=["Open", "In Review", "Resolved", "Closed"].index(t.status))
+                            new_st = st.selectbox(
+                                "Update Status",
+                                ["Open", "In Review", "Resolved", "Closed"],
+                                index=["Open", "In Review", "Resolved", "Closed"].index(t["status"]),
+                            )
                         with c_u2:
-                            new_notes = st.text_input("Administrator Action Notes", value=t.admin_notes or "")
+                            new_notes = st.text_input("Administrator Action Notes", value=t.get("admin_notes") or "")
 
                         if st.form_submit_button("Save Update"):
-                            ticketing.update_ticket_status(t.id, new_st, new_notes)
-                            st.success(f"Ticket {t.ticket_number} updated to {new_st}!")
+                            update_admin_ticket(t["id"], new_st, new_notes)
+                            st.success(f"Ticket {t['ticket_number']} updated to {new_st}!")
                             time.sleep(0.5)
                             st.rerun()
 
@@ -498,32 +505,29 @@ with tab_tickets:
                 prio = st.selectbox("Priority", ["Low", "Medium", "High", "Critical"], index=1)
                 if st.form_submit_button("Submit Ticket"):
                     if title and desc:
-                        t = ticketing.create_ticket(
-                            user_email=curr_user.email,
-                            user_name=curr_user.name,
-                            category=cat,
-                            title=title,
-                            description=desc,
-                            priority=prio,
+                        user_sess = {"name": curr_user.name, "email": curr_user.email}
+                        t_res = create_escalation_ticket(
+                            {"category": cat, "summary": title, "query_text": desc, "priority": prio},
+                            user_session=user_sess,
                         )
-                        st.success(f"Ticket {t.ticket_number} created! Department administrators will review it.")
+                        st.success(f"Ticket {t_res['ticket_number']} created! Department administrators will review it.")
                         time.sleep(0.5)
                         st.rerun()
                     else:
                         st.warning("Please provide both a title and description.")
 
-        my_tickets = ticketing.get_user_tickets(curr_user.email)
+        my_tickets = get_student_tickets(curr_user.email)
         if not my_tickets:
             st.info("You currently have no active support tickets.")
         else:
             for t in my_tickets:
-                status_color = "🟢" if t.status == "Resolved" else ("🟡" if t.status == "In Review" else "🔵")
-                with st.expander(f"{status_color} [{t.ticket_number}] {t.category}: {t.title} — **{t.status}**"):
-                    st.write(f"**Submitted On:** {t.created_at}")
-                    st.write(f"**Priority:** {t.priority}")
-                    st.write(f"**Description:** {t.description}")
-                    if t.admin_notes:
-                        st.success(f"**Official Resolution / Admin Note:** {t.admin_notes}")
+                status_color = "🟢" if t["status"] == "Resolved" else ("🟡" if t["status"] == "In Review" else "🔵")
+                with st.expander(f"{status_color} [{t['ticket_number']}] {t['category']}: {t['title']} — **{t['status']}**"):
+                    st.write(f"**Submitted On:** {t['created_at']}")
+                    st.write(f"**Priority:** {t['priority']}")
+                    st.write(f"**Description:** {t['description']}")
+                    if t.get("admin_notes"):
+                        st.success(f"**Official Resolution / Admin Note:** {t['admin_notes']}")
                     else:
                         st.caption("Waiting for administrative review.")
 
@@ -537,7 +541,7 @@ if curr_user.is_admin and tab_knowledge:
         col_m1, col_m2, col_m3 = st.columns(3)
         col_m1.metric("Indexed Chunks", store.count())
         col_m2.metric("Chroma Collection", store.collection_name)
-        col_m3.metric("SQLite DB Status", "Connected (data/db/campus.db)")
+        col_m3.metric("SQLite DB Status", "Connected (data/db/querycampus.db)")
 
         st.markdown("#### Institutional Document Repositories")
         docs = list(SAMPLE_DOCS_DIR.glob("*.*"))
