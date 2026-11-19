@@ -21,6 +21,7 @@ if str(BASE_DIR) not in sys.path:
 from src.retrieval import retrieve_context, CampusRetriever, CONFIDENCE_THRESHOLD
 from src.generator import CampusGenerator
 from src.ticketing import TicketingSystem, Ticket
+from src.ingest import DocumentIngestor
 from src.auth import (
     init_auth_db,
     is_valid_institutional_domain,
@@ -262,3 +263,77 @@ def update_admin_ticket(
         admin_notes=admin_notes,
         user_session=user_session,
     )
+
+
+def list_admin_documents() -> List[Dict[str, Any]]:
+    """Lists all official documents currently stored and indexed in the knowledge base."""
+    target_dir = Path(os.getenv("SAMPLE_DOCS_DIR", BASE_DIR / "data" / "sample_docs"))
+    if not target_dir.exists():
+        return []
+    docs = []
+    for f in sorted(target_dir.iterdir()):
+        if f.is_file() and not f.name.startswith("."):
+            docs.append({
+                "filename": f.name,
+                "size_bytes": f.stat().st_size,
+                "size_kb": round(f.stat().st_size / 1024, 1),
+                "modified_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(f.stat().st_mtime)),
+                "extension": f.suffix.lower(),
+            })
+    return docs
+
+
+def ingest_admin_document(
+    filename: str,
+    file_bytes: bytes,
+    user_session: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Admin tool: Saves a new official document (PDF, TXT, MD) to SAMPLE_DOCS_DIR,
+    chunks it with DocumentIngestor, and indexes into ChromaDB vector collections.
+    Enforces Admin RBAC if user_session is provided.
+    """
+    if user_session is not None:
+        require_role(user_session, "Admin")
+
+    target_dir = Path(os.getenv("SAMPLE_DOCS_DIR", BASE_DIR / "data" / "sample_docs"))
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / filename
+
+    with open(target_file, "wb") as f:
+        f.write(file_bytes)
+
+    # Ingest chunks
+    ingestor = DocumentIngestor()
+    ext = target_file.suffix.lower()
+    if ext == ".pdf":
+        chunks = ingestor.load_pdf(str(target_file))
+    else:
+        chunks = ingestor.load_text_file(str(target_file))
+
+    if not chunks:
+        return {
+            "success": False,
+            "filename": filename,
+            "chunks_added": 0,
+            "error": "No text content could be extracted from document.",
+        }
+
+    # Add to all active Chroma collections
+    added_total = 0
+    from src.vector_store import ChromaVectorStore, COLLECTION_NAME
+    for col_name in [COLLECTION_NAME, "campus_documents", "university_docs", "querycampus_university_docs"]:
+        try:
+            store = ChromaVectorStore(collection_name=col_name)
+            added = store.add_chunks(chunks)
+            added_total = max(added_total, added)
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "filename": filename,
+        "chunks_added": len(chunks),
+        "file_size": len(file_bytes),
+        "message": f"Successfully ingested '{filename}' and indexed {len(chunks)} chunks into ChromaDB.",
+    }

@@ -1013,6 +1013,71 @@
       background: #FFFFFF;
     }
 
+    /* Admin Console Drawer / Modal */
+    .modal-card-admin {
+      background: var(--card-white);
+      border: 2px solid var(--c-royal-purple);
+      border-radius: var(--radius-xl);
+      max-width: 980px;
+      width: 95vw;
+      max-height: 90vh;
+      padding: 30px;
+      box-shadow: var(--shadow-float);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admin-tab-nav {
+      display: flex;
+      gap: 12px;
+      border-bottom: 2px solid var(--card-border);
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+    }
+
+    .admin-tab-btn {
+      background: transparent;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .admin-tab-btn.active {
+      background: rgba(104, 66, 194, 0.12);
+      color: var(--c-deep-purple);
+      border-bottom: 3px solid var(--c-royal-purple);
+    }
+
+    .admin-tab-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .admin-ticket-card {
+      background: #FFFFFF;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s;
+    }
+
+    .admin-ticket-card:hover {
+      border-color: var(--c-royal-purple);
+      transform: translateY(-2px);
+    }
+
     /* Animations */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(12px); }
@@ -1102,6 +1167,10 @@
         <span>🎓 Student: <strong id="kioskUserName">Amanat Singh</strong></span>
       </div>
 
+      <button class="btn-header" onclick="openAdminModal()" id="kioskAdminBtn" style="display:none; background: linear-gradient(135deg, #10B981 0%, #0D9488 100%); color: #FFFFFF; font-weight: 700; border: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+        🛡️ Admin Console
+      </button>
+
       <button class="btn-header" onclick="kioskSignOut()" id="kioskSignOutBtn" style="display:none; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5;">
         🚪 Sign Out
       </button>
@@ -1146,8 +1215,8 @@
             </div>
             <h2>Welcome to Campus Reception!</h2>
             <div class="desk-speech-bubble" id="lobbyAussieBubble">
-              "Good evening, <strong>Serina</strong>! Welcome to Bosscoder College Student Center. I'm <strong>Aussie</strong>, your AI Campus Receptionist. 
-              Step up to my desk or ring the golden bell to inquire about campus guidelines, exam revaluation, 
+              "Welcome to Bosscoder College Student Center! I'm <strong>Aussie</strong>, your AI Campus Receptionist. 
+              Step up to my desk or ring the golden bell to inquire about campus guidelines, exam passing marks, revaluation, 
               library study zones, or hostel gates. I'll open the interactive terminal for you right now!"
             </div>
           </div>
@@ -1255,7 +1324,7 @@
               </span>
             </h3>
             <div class="kiosk-status-line">
-              <span id="aussieStatusText">Serving Serina Mehra • Ready to assist with verified records</span>
+              <span id="aussieStatusText">Serving Campus Member • Ready to assist with verified records</span>
             </div>
           </div>
         </div>
@@ -1276,11 +1345,11 @@
         <!-- Welcome Message from Aussie -->
         <div class="message-row assistant">
           <div class="message-avatar assistant">👩‍💼</div>
-          <div class="bubble">
+          <div class="bubble" id="aussieWelcomeMessage">
             <div class="official-seal-header">
               <span>🏛️ Bosscoder College Concierge Desk</span>
             </div>
-            Hello <strong>Serina</strong>! Welcome to the Bosscoder College reception terminal. I'm <strong>Aussie</strong>. 
+            Hello <strong id="welcomeStudentName">Student</strong>! Welcome to the Bosscoder College reception terminal. I'm <strong>Aussie</strong>. 
             I'm connected directly to our official institutional policy handbooks, library database, 
             examination bylaws, and hostel guidelines.
             <br><br>
@@ -1416,6 +1485,110 @@
     </div>
   </div>
 
+  <!-- ===============================================================
+       OFFICIAL ADMINISTRATIVE COMMAND & RESOLUTION CONSOLE MODAL
+       =============================================================== -->
+  <div class="modal-overlay" id="adminConsoleModal">
+    <div class="modal-card-admin">
+      <button class="modal-close-btn" onclick="closeAdminModal()">✕</button>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-right:40px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="font-size:1.4rem;">🛡️</span>
+            <h3 style="font-family:'Cinzel', serif; font-size:1.35rem; color:var(--c-deep-purple); margin:0;">
+              Administrator Command Center
+            </h3>
+            <span style="background:rgba(13,148,136,0.12); color:#0D9488; font-size:0.75rem; font-weight:800; padding:3px 10px; border-radius:12px; border:1px solid rgba(13,148,136,0.25);">
+              Verified Admin Session • RBAC Active
+            </span>
+          </div>
+          <p style="color:var(--text-muted); font-size:0.84rem; margin:0;">
+            Manage campus support escalations, update official resolutions, and ingest university knowledge base documents.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="admin-tab-nav">
+        <button class="admin-tab-btn active" id="adminTabBtnTickets" onclick="switchAdminTab('tickets')">
+          🎫 Live Ticket Queue & Issue Resolution
+        </button>
+        <button class="admin-tab-btn" id="adminTabBtnDocs" onclick="switchAdminTab('docs')">
+          📂 Knowledge Base & File Ingestion
+        </button>
+      </div>
+
+      <!-- Tab 1: Ticket Queue & Resolution -->
+      <div id="adminPaneTickets" class="admin-tab-pane">
+        <!-- Controls Bar -->
+        <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="adminTicketSearch" placeholder="🔍 Search ticket #, student, title..." oninput="filterAdminTickets()"
+                 style="flex:1; min-width:220px; padding:10px 14px; border:1px solid var(--card-border); border-radius:8px; font-size:0.88rem; outline:none;" />
+          
+          <select id="adminTicketStatusFilter" onchange="loadAdminTickets()"
+                  style="padding:10px 14px; border:1px solid var(--card-border); border-radius:8px; font-size:0.88rem; outline:none; background:#FFFFFF; color:var(--text-dark); font-weight:600;">
+            <option value="All">All Statuses</option>
+            <option value="Open">Open</option>
+            <option value="In Review">In Review</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+          </select>
+
+          <button onclick="loadAdminTickets()" class="btn-header" style="background:var(--c-royal-purple); color:#FFFFFF; border:none; padding:10px 16px; font-weight:700;">
+            🔄 Refresh Queue
+          </button>
+        </div>
+
+        <div id="adminTicketStatusAlert" style="display:none; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:0.86rem;"></div>
+
+        <!-- Ticket Cards Container -->
+        <div id="adminTicketsContainer">
+          <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading tickets...</div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Knowledge Base Document Ingestion -->
+      <div id="adminPaneDocs" class="admin-tab-pane" style="display:none;">
+        <!-- Upload Card -->
+        <div style="background:var(--c-light-lavender); border:1.5px dashed var(--c-royal-purple); border-radius:14px; padding:22px; margin-bottom:20px;">
+          <h4 style="font-size:1.05rem; font-weight:800; color:var(--c-deep-purple); margin-bottom:6px;">
+            📥 Ingest Institutional Document into Vector Knowledge Base
+          </h4>
+          <p style="font-size:0.84rem; color:var(--text-muted); line-height:1.5; margin-bottom:14px;">
+            Upload official PDF, TXT, or MD documents (e.g. handbooks, exam regulations, hostel policies).
+            The backend parses the document using <code>DocumentIngestor</code>, chunks it recursively (800 chars / 80 overlap), generates embeddings, and indexes them into ChromaDB collections in real time.
+          </p>
+
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <input type="file" id="adminDocFileInput" accept=".pdf,.txt,.md,.csv"
+                   style="flex:1; min-width:240px; padding:9px 12px; background:#FFFFFF; border:1px solid var(--card-border); border-radius:8px; font-size:0.88rem;" />
+            <button onclick="handleAdminDocUpload()" id="adminUploadBtn"
+                    style="background:var(--c-lime-green); color:var(--c-deep-purple); border:none; padding:11px 22px; border-radius:8px; font-weight:800; font-size:0.92rem; cursor:pointer; box-shadow:var(--lime-glow);">
+              📥 Parse, Embed & Index Document
+            </button>
+          </div>
+
+          <div id="adminDocUploadMsg" style="display:none; margin-top:14px; padding:12px 14px; border-radius:8px; font-size:0.86rem;"></div>
+        </div>
+
+        <!-- Document Repository Table -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:1.05rem; font-weight:800; color:var(--c-deep-purple); margin:0;">
+            📚 Active Knowledge Base Repository
+          </h4>
+          <button onclick="loadAdminDocs()" style="background:transparent; border:1px solid var(--card-border); padding:6px 14px; border-radius:8px; font-size:0.82rem; font-weight:700; color:var(--c-royal-purple); cursor:pointer;">
+            🔄 Refresh List
+          </button>
+        </div>
+
+        <div id="adminDocsTableContainer" style="overflow-x:auto;">
+          <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading active documents...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ===============================================================
        JAVASCRIPT LOGIC & AUDIO SYNTHESIS
@@ -1513,8 +1686,19 @@
 
       const bubble = document.getElementById('lobbyAussieBubble');
       if (bubble) {
-        bubble.innerHTML = "🛎️ <em>*Ding!*</em> Aussie smiles warmly: <strong>'Welcome Serina! Step up to the counter or click any topic to begin!'</strong>";
+        const u = getActiveKioskUser();
+        const uName = u.name || "Student";
+        bubble.innerHTML = `🛎️ <em>*Ding!*</em> Aussie smiles warmly: <strong>'Welcome ${escapeHtml(uName)}! Step up to the counter or click any topic to begin!'</strong>`;
       }
+    }
+
+    // Helper: Retrieve active logged-in institutional user session
+    function getActiveKioskUser() {
+      try {
+        const raw = sessionStorage.getItem("kiosk_user");
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return { name: "Campus Member", role: "Student", email: "student@bst.edu.in" };
     }
 
     // Voice Synthesis (TTS)
@@ -1575,19 +1759,23 @@
       
       const messagesContainer = document.getElementById('kioskMessages');
       const statusText = document.getElementById('aussieStatusText');
+      const u = getActiveKioskUser();
+      const userName = u.name || u.email || 'Student';
+      const roleTag = u.role ? ` (${u.role})` : '';
+      const icon = (u.role && u.role.toLowerCase() === 'admin') ? '🛡️' : '🎓';
 
       // 1. Append User Message
       const userDiv = document.createElement('div');
       userDiv.className = 'message-row user';
       userDiv.innerHTML = `
-        <div class="message-avatar user">🎓</div>
-        <div class="bubble"><strong>Serina Mehra:</strong><br>${escapeHtml(query)}</div>
+        <div class="message-avatar user">${icon}</div>
+        <div class="bubble"><strong>${escapeHtml(userName)}${escapeHtml(roleTag)}:</strong><br>${escapeHtml(query)}</div>
       `;
       messagesContainer.appendChild(userDiv);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
       // 2. Set Aussie status
-      statusText.textContent = "Aussie is consulting official college records...";
+      statusText.textContent = "Aussie is consulting official college records via Groq AI...";
 
       // 3. Prepare Assistant Message container (White rounded card)
       const assistantDiv = document.createElement('div');
@@ -1606,7 +1794,7 @@
 
       const replyBody = assistantDiv.querySelector('.aussie-reply-body');
 
-      // 4. Query Backend or Local RAG Fallback
+      // 4. Query Backend with Groq Model and User Session
       let result = null;
       const t0 = performance.now();
 
@@ -1614,7 +1802,12 @@
         const response = await fetch('/api/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: query, model: 'gemma3:4b', top_k: 2 })
+          body: JSON.stringify({
+            query: query,
+            model: 'qwen/qwen3.8-27b',
+            user_session: u,
+            top_k: 3
+          })
         });
         if (response.ok) {
           result = await response.json();
@@ -1628,7 +1821,7 @@
       const totalTime = ((performance.now() - t0) / 1000).toFixed(3);
 
       // 5. Render Response
-      statusText.textContent = "Serving Serina Mehra • Ready to assist with verified records";
+      statusText.textContent = `Serving ${escapeHtml(userName)}${escapeHtml(roleTag)} • Ready to assist with verified records`;
       
       let html = `<p>${formatMarkdown(result.answer)}</p>`;
 
@@ -1787,28 +1980,462 @@
     }
 
     // -----------------------------------------------------------------
+    // ADMINISTRATOR COMMAND CENTER & TICKET RESOLUTION
+    // -----------------------------------------------------------------
+    let adminTicketsCache = [];
+
+    function openAdminModal() {
+      const saved = sessionStorage.getItem("kiosk_user");
+      const user = saved ? JSON.parse(saved) : null;
+      if (!user || (user.role || '').toLowerCase() !== 'admin') {
+        alert("Access Restricted: Administrator privileges required.");
+        return;
+      }
+      const modal = document.getElementById("adminConsoleModal");
+      if (modal) modal.style.display = "flex";
+      loadAdminTickets();
+      loadAdminDocs();
+    }
+
+    function closeAdminModal() {
+      const modal = document.getElementById("adminConsoleModal");
+      if (modal) modal.style.display = "none";
+    }
+
+    function switchAdminTab(tab) {
+      const paneTickets = document.getElementById("adminPaneTickets");
+      const paneDocs = document.getElementById("adminPaneDocs");
+      const btnTickets = document.getElementById("adminTabBtnTickets");
+      const btnDocs = document.getElementById("adminTabBtnDocs");
+
+      if (tab === 'tickets') {
+        paneTickets.style.display = "block";
+        paneDocs.style.display = "none";
+        btnTickets.classList.add("active");
+        btnDocs.classList.remove("active");
+        loadAdminTickets();
+      } else {
+        paneTickets.style.display = "none";
+        paneDocs.style.display = "block";
+        btnTickets.classList.remove("active");
+        btnDocs.classList.add("active");
+        loadAdminDocs();
+      }
+    }
+
+    async function loadAdminTickets() {
+      const container = document.getElementById("adminTicketsContainer");
+      if (!container) return;
+      const statusFilter = document.getElementById("adminTicketStatusFilter").value;
+      container.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">🔄 Fetching live tickets from database...</div>`;
+
+      try {
+        const query = statusFilter && statusFilter !== 'All' ? `?role=admin&status_filter=${encodeURIComponent(statusFilter)}` : `?role=admin`;
+        const resp = await fetch(`/api/tickets${query}`);
+        const data = await resp.json();
+        adminTicketsCache = data.tickets || [];
+        filterAdminTickets();
+      } catch (err) {
+        container.innerHTML = `<div style="padding:20px; text-align:center; color:#DC2626;">❌ Failed to load tickets from server.</div>`;
+      }
+    }
+
+    function filterAdminTickets() {
+      const query = (document.getElementById("adminTicketSearch").value || "").toLowerCase().trim();
+      const statusFilter = document.getElementById("adminTicketStatusFilter").value;
+      
+      let filtered = adminTicketsCache;
+      if (statusFilter && statusFilter !== 'All') {
+        filtered = filtered.filter(t => (t.status || '').toLowerCase() === statusFilter.toLowerCase());
+      }
+      if (query) {
+        filtered = filtered.filter(t => 
+          (t.ticket_number || '').toLowerCase().includes(query) ||
+          (t.user_name || '').toLowerCase().includes(query) ||
+          (t.user_email || '').toLowerCase().includes(query) ||
+          (t.title || '').toLowerCase().includes(query) ||
+          (t.description || '').toLowerCase().includes(query) ||
+          (t.category || '').toLowerCase().includes(query)
+        );
+      }
+      renderAdminTickets(filtered);
+    }
+
+    function renderAdminTickets(tickets) {
+      const container = document.getElementById("adminTicketsContainer");
+      if (!container) return;
+
+      if (!tickets || tickets.length === 0) {
+        container.innerHTML = `
+          <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); border-radius:12px; padding:36px; text-align:center; color:var(--text-muted);">
+            <div style="font-size:2rem; margin-bottom:8px;">🎉</div>
+            <h4 style="font-size:1.1rem; color:var(--c-deep-purple); margin-bottom:4px;">No Tickets Found</h4>
+            <p style="font-size:0.86rem;">No escalation tickets match the selected filters.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const statusColors = {
+        'Open': { bg: '#FEF3C7', border: '#F59E0B', text: '#B45309' },
+        'In Review': { bg: '#E0E7FF', border: '#6366F1', text: '#4338CA' },
+        'Resolved': { bg: '#D1FAE5', border: '#10B981', text: '#065F46' },
+        'Closed': { bg: '#F1F5F9', border: '#94A3B8', text: '#475569' }
+      };
+
+      const priorityColors = {
+        'Critical': { bg: '#FEE2E2', text: '#DC2626' },
+        'High': { bg: '#FFEDD5', text: '#EA580C' },
+        'Medium': { bg: '#FEF9C3', text: '#CA8A04' },
+        'Low': { bg: '#F3F4F6', text: '#4B5563' }
+      };
+
+      let html = '';
+      tickets.forEach(t => {
+        const sStyle = statusColors[t.status] || statusColors['Open'];
+        const pStyle = priorityColors[t.priority] || priorityColors['Medium'];
+        const tid = t.id;
+        const notesId = `adminNoteInput_${tid}`;
+        const selectId = `adminStatusSelect_${tid}`;
+
+        html += `
+          <div class="admin-ticket-card" id="ticketCard_${tid}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'JetBrains Mono', monospace; font-weight:800; font-size:0.92rem; color:var(--c-royal-purple);">
+                  ${escapeHtml(t.ticket_number)}
+                </span>
+                <span style="background:${sStyle.bg}; border:1px solid ${sStyle.border}; color:${sStyle.text}; font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:10px;">
+                  ${escapeHtml(t.status)}
+                </span>
+                <span style="background:${pStyle.bg}; color:${pStyle.text}; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">
+                  ${escapeHtml(t.priority || 'Medium')}
+                </span>
+                <span style="background:rgba(104,66,194,0.08); color:var(--c-deep-purple); font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:10px;">
+                  ${escapeHtml(t.category || 'General')}
+                </span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">
+                📅 ${escapeHtml(t.created_at || 'Just now')}
+              </div>
+            </div>
+
+            <div style="margin-bottom:8px;">
+              <h4 style="font-size:1.02rem; font-weight:800; color:var(--text-dark); margin-bottom:4px;">
+                ${escapeHtml(t.title)}
+              </h4>
+              <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.45;">
+                ${escapeHtml(t.description)}
+              </p>
+            </div>
+
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px; display:flex; gap:16px;">
+              <span>👤 <strong>${escapeHtml(t.user_name || 'Student')}</strong></span>
+              <span>📧 <code>${escapeHtml(t.user_email || 'N/A')}</code></span>
+            </div>
+
+            ${t.admin_notes ? `
+              <div style="background:rgba(16,185,129,0.08); border-left:3px solid #10B981; padding:8px 12px; border-radius:6px; margin-bottom:12px; font-size:0.82rem; color:#065F46;">
+                <strong>Official Remarks:</strong> ${escapeHtml(t.admin_notes)}
+              </div>
+            ` : ''}
+
+            <!-- Inline Resolution Console -->
+            <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); border-radius:10px; padding:12px 14px; margin-top:8px;">
+              <div style="font-size:0.78rem; font-weight:800; color:var(--c-deep-purple); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+                🛠️ Resolution & Status Update
+              </div>
+              <div style="display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+                <select id="${selectId}" style="padding:6px 10px; border:1px solid var(--card-border); border-radius:6px; font-size:0.82rem; font-weight:700; background:#FFFFFF;">
+                  <option value="Open" ${t.status === 'Open' ? 'selected' : ''}>Open</option>
+                  <option value="In Review" ${t.status === 'In Review' ? 'selected' : ''}>In Review</option>
+                  <option value="Resolved" ${t.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                  <option value="Closed" ${t.status === 'Closed' ? 'selected' : ''}>Closed</option>
+                </select>
+                <input type="text" id="${notesId}" placeholder="Enter administrative remarks (e.g. Card recovered at Room 102)..." value="${escapeHtml(t.admin_notes || '')}"
+                       style="flex:1; min-width:200px; padding:6px 10px; border:1px solid var(--card-border); border-radius:6px; font-size:0.82rem; outline:none;" />
+              </div>
+              <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button onclick="saveTicketResolution(${tid}, '${selectId}', '${notesId}')" 
+                        style="background:var(--c-royal-purple); color:#FFFFFF; border:none; padding:7px 14px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                  💾 Save Resolution
+                </button>
+                <button onclick="quickResolveTicket(${tid})" 
+                        style="background:var(--c-lime-green); color:var(--c-deep-purple); border:none; padding:7px 14px; border-radius:6px; font-size:0.8rem; font-weight:800; cursor:pointer;">
+                  ⚡ Quick Resolve
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function saveTicketResolution(ticketId, selectId, notesId) {
+      const selectElem = document.getElementById(selectId);
+      const notesElem = document.getElementById(notesId);
+      const newStatus = selectElem ? selectElem.value : "Resolved";
+      const adminNotes = notesElem ? notesElem.value.trim() : "";
+
+      const saved = sessionStorage.getItem("kiosk_user");
+      const user = saved ? JSON.parse(saved) : { role: "Admin", name: "Administrator" };
+
+      const alertBox = document.getElementById("adminTicketStatusAlert");
+
+      try {
+        const resp = await fetch("/api/ticket/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket_id: ticketId,
+            new_status: newStatus,
+            admin_notes: adminNotes || `Status updated to ${newStatus} by ${user.name || 'Administrator'}`,
+            user_session: user
+          })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          if (alertBox) {
+            alertBox.style.display = "block";
+            alertBox.style.background = "#D1FAE5";
+            alertBox.style.color = "#065F46";
+            alertBox.style.border = "1px solid #10B981";
+            alertBox.innerHTML = `✅ <strong>Ticket Updated:</strong> Ticket #${ticketId} status saved as <strong>${escapeHtml(newStatus)}</strong>.`;
+            setTimeout(() => { alertBox.style.display = "none"; }, 4000);
+          }
+          loadAdminTickets();
+        } else {
+          alert(`❌ Failed to update ticket: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert("❌ Error communicating with ticket resolution endpoint.");
+      }
+    }
+
+    async function quickResolveTicket(ticketId) {
+      const saved = sessionStorage.getItem("kiosk_user");
+      const user = saved ? JSON.parse(saved) : { role: "Admin", name: "Administrator" };
+      const defaultNotes = "Resolved via QueryCampus Administrative Desk & front desk confirmation.";
+
+      try {
+        const resp = await fetch("/api/ticket/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket_id: ticketId,
+            new_status: "Resolved",
+            admin_notes: defaultNotes,
+            user_session: user
+          })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          loadAdminTickets();
+        } else {
+          alert(`❌ Failed to resolve ticket: ${data.error || 'Server error'}`);
+        }
+      } catch (err) {
+        alert("❌ Network error while resolving ticket.");
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // DOCUMENT INGESTION & KNOWLEDGE BASE MANAGEMENT
+    // -----------------------------------------------------------------
+    async function loadAdminDocs() {
+      const container = document.getElementById("adminDocsTableContainer");
+      if (!container) return;
+      container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-muted);">🔄 Loading indexed documents...</div>`;
+
+      try {
+        const resp = await fetch("/api/admin/documents");
+        const data = await resp.json();
+        renderAdminDocs(data.documents || []);
+      } catch (err) {
+        container.innerHTML = `<div style="padding:16px; text-align:center; color:#DC2626;">❌ Failed to load documents list.</div>`;
+      }
+    }
+
+    function renderAdminDocs(docs) {
+      const container = document.getElementById("adminDocsTableContainer");
+      if (!container) return;
+
+      if (!docs || docs.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-muted);">No documents currently indexed.</div>`;
+        return;
+      }
+
+      let rows = '';
+      docs.forEach(doc => {
+        const isOfficialRulebook = doc.filename.includes('bosscoder_official_2026_rulebook') || doc.filename.includes('rulebook');
+        const badge = isOfficialRulebook
+          ? `<span style="background:#FEF3C7; color:#B45309; border:1px solid #F59E0B; font-size:0.72rem; font-weight:800; padding:2px 8px; border-radius:10px;">⭐ Supreme Precedence (2026)</span>`
+          : `<span style="background:#D1FAE5; color:#065F46; border:1px solid #10B981; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:10px;">Indexed Active</span>`;
+
+        const icon = doc.extension === '.pdf' ? '📄' : (doc.extension === '.txt' ? '📝' : '📑');
+
+        rows += `
+          <tr style="border-bottom:1px solid var(--card-border);">
+            <td style="padding:12px 14px; font-weight:700; color:var(--text-dark);">
+              <span style="margin-right:6px;">${icon}</span> ${escapeHtml(doc.filename)}
+            </td>
+            <td style="padding:12px 14px; font-family:'JetBrains Mono', monospace; font-size:0.84rem; color:var(--text-muted);">
+              ${doc.size_kb} KB
+            </td>
+            <td style="padding:12px 14px; font-size:0.82rem; color:var(--text-muted);">
+              ${escapeHtml(doc.modified_at)}
+            </td>
+            <td style="padding:12px 14px;">
+              ${badge}
+            </td>
+          </tr>
+        `;
+      });
+
+      container.innerHTML = `
+        <table style="width:100%; border-collapse:collapse; background:#FFFFFF; border-radius:10px; overflow:hidden; font-size:0.88rem;">
+          <thead>
+            <tr style="background:var(--c-light-lavender); border-bottom:1.5px solid var(--card-border); text-align:left; color:var(--c-deep-purple); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.5px;">
+              <th style="padding:12px 14px;">Document Name</th>
+              <th style="padding:12px 14px;">Size</th>
+              <th style="padding:12px 14px;">Last Modified</th>
+              <th style="padding:12px 14px;">Vector Index Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function handleAdminDocUpload() {
+      const fileInput = document.getElementById("adminDocFileInput");
+      const msgBox = document.getElementById("adminDocUploadMsg");
+      const uploadBtn = document.getElementById("adminUploadBtn");
+
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Please choose a file (.pdf, .txt, .md, .csv) to upload.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const saved = sessionStorage.getItem("kiosk_user");
+      const user = saved ? JSON.parse(saved) : { role: "Admin", name: "Administrator" };
+
+      if ((user.role || '').toLowerCase() !== 'admin') {
+        alert("Administrator role required to upload documents.");
+        return;
+      }
+
+      msgBox.style.display = "block";
+      msgBox.style.background = "#E0E7FF";
+      msgBox.style.color = "#4338CA";
+      msgBox.style.border = "1px solid #6366F1";
+      msgBox.innerHTML = `⏳ Ingesting and embedding <strong>${escapeHtml(file.name)}</strong>... Please wait.`;
+      uploadBtn.disabled = true;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Data = e.target.result;
+        try {
+          const resp = await fetch("/api/admin/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: file.name,
+              file_base64: base64Data,
+              user_session: user
+            })
+          });
+          const result = await resp.json();
+
+          if (resp.ok && result.success) {
+            msgBox.style.background = "#D1FAE5";
+            msgBox.style.color = "#065F46";
+            msgBox.style.border = "1px solid #10B981";
+            msgBox.innerHTML = `✅ <strong>Ingestion Successful!</strong> ${escapeHtml(result.message || 'File indexed into vector store.')} (${result.chunks_added} chunks added)`;
+            fileInput.value = "";
+            loadAdminDocs();
+          } else {
+            msgBox.style.background = "#FEE2E2";
+            msgBox.style.color = "#991B1B";
+            msgBox.style.border = "1px solid #F87171";
+            msgBox.innerHTML = `❌ <strong>Ingestion Failed:</strong> ${escapeHtml(result.error || 'Server error during parsing.')}`;
+          }
+        } catch (err) {
+          msgBox.style.background = "#FEE2E2";
+          msgBox.style.color = "#991B1B";
+          msgBox.style.border = "1px solid #F87171";
+          msgBox.innerHTML = `❌ <strong>Network Error:</strong> Failed to upload file to backend.`;
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // -----------------------------------------------------------------
     // INSTITUTIONAL KIOSK AUTHENTICATION & LOGIN GATE
     // -----------------------------------------------------------------
+    function updateKioskUserUI(user) {
+      if (!user) return;
+      const name = user.name || user.email.split('@')[0];
+      const role = user.role || 'Student';
+      const icon = (role.toLowerCase() === 'admin') ? '🛡️' : '🎓';
+      const roleTag = role ? ` (${role})` : '';
+
+      const userPill = document.getElementById("kioskUserPill");
+      if (userPill) {
+        userPill.innerHTML = `<span>${icon} ${escapeHtml(role)}: <strong>${escapeHtml(name)}</strong></span>`;
+      }
+
+      const adminBtn = document.getElementById("kioskAdminBtn");
+      if (adminBtn) {
+        if (role.toLowerCase() === 'admin') {
+          adminBtn.style.display = "inline-flex";
+        } else {
+          adminBtn.style.display = "none";
+        }
+      }
+
+      const statusText = document.getElementById("aussieStatusText");
+      if (statusText) {
+        statusText.textContent = `Serving ${name}${roleTag} • Ready to assist with verified records`;
+      }
+
+      const welcomeName = document.getElementById("welcomeStudentName");
+      if (welcomeName) {
+        welcomeName.textContent = name;
+      }
+
+      const lobbyBubble = document.getElementById("lobbyAussieBubble");
+      if (lobbyBubble) {
+        lobbyBubble.innerHTML = `"Welcome, <strong>${escapeHtml(name)}</strong>! Welcome to Bosscoder College Student Center. I'm <strong>Aussie</strong>, your AI Campus Receptionist. Step up to my desk or ring the golden bell to inquire about campus guidelines, exam passing marks, revaluation, library study zones, or hostel gates. I'll open the interactive terminal for you right now!"`;
+      }
+    }
+
     function checkKioskAuth() {
       const saved = sessionStorage.getItem("kiosk_user");
       const modal = document.getElementById("kioskLoginModal");
-      const userPill = document.getElementById("kioskUserPill");
       const signOutBtn = document.getElementById("kioskSignOutBtn");
+      const adminBtn = document.getElementById("kioskAdminBtn");
 
       if (!saved) {
         if (modal) modal.style.display = "flex";
         if (signOutBtn) signOutBtn.style.display = "none";
+        if (adminBtn) adminBtn.style.display = "none";
       } else {
         try {
           const user = JSON.parse(saved);
           if (modal) modal.style.display = "none";
-          if (userPill) {
-            const icon = (user.role && user.role.toLowerCase() === 'admin') ? '🛡️' : '🎓';
-            userPill.innerHTML = `<span>${icon} ${user.role || 'User'}: <strong>${escapeHtml(user.name || user.email)}</strong></span>`;
-          }
+          updateKioskUserUI(user);
           if (signOutBtn) signOutBtn.style.display = "inline-flex";
         } catch (e) {
           if (modal) modal.style.display = "flex";
+          if (adminBtn) adminBtn.style.display = "none";
         }
       }
     }
@@ -1861,6 +2488,10 @@
 
     function kioskSignOut() {
       sessionStorage.removeItem("kiosk_user");
+      const adminBtn = document.getElementById("kioskAdminBtn");
+      if (adminBtn) adminBtn.style.display = "none";
+      const adminModal = document.getElementById("adminConsoleModal");
+      if (adminModal) adminModal.style.display = "none";
       checkKioskAuth();
     }
 

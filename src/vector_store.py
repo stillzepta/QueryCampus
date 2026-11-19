@@ -46,7 +46,16 @@ class ChromaVectorStore:
         self._fallback_file = Path(self.persist_dir) / f"{self.collection_name}_fallback.json"
         self._fallback_data: List[Dict[str, Any]] = []
 
-        os.makedirs(self.persist_dir, exist_ok=True)
+        try:
+            os.makedirs(self.persist_dir, exist_ok=True)
+        except OSError:
+            # Serverless / Read-only filesystem fallback
+            self.persist_dir = "/tmp/chroma_db"
+            try:
+                os.makedirs(self.persist_dir, exist_ok=True)
+            except Exception:
+                self.use_chroma = False
+
         if self.use_chroma:
             try:
                 self.client = chromadb.PersistentClient(

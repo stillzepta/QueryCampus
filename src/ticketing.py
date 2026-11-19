@@ -43,7 +43,14 @@ class Ticket:
 class TicketingSystem:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
-        os.makedirs(self.db_path.parent, exist_ok=True)
+        try:
+            os.makedirs(self.db_path.parent, exist_ok=True)
+        except OSError:
+            self.db_path = Path("/tmp/data/db/querycampus.db")
+            try:
+                os.makedirs(self.db_path.parent, exist_ok=True)
+            except Exception:
+                pass
         # Ensure users and sessions schema are also present in the database
         init_auth_db(self.db_path)
         self._init_db()

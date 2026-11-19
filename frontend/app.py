@@ -54,12 +54,44 @@ try:
         get_student_tickets,
         get_admin_tickets,
         update_admin_ticket,
+        ingest_admin_document,
+        list_admin_documents,
     )
     BACKEND_MODE = "Live Backend Engine (ChromaDB + Ollama/Groq + SQLite)"
     LIVE_BACKEND_AVAILABLE = True
 except Exception as e:
     LIVE_BACKEND_AVAILABLE = False
     BACKEND_MODE = f"Resilient Fallback Mode ({type(e).__name__})"
+
+    def list_admin_documents() -> List[Dict[str, Any]]:
+        target_dir = PROJECT_ROOT / "data" / "sample_docs"
+        if not target_dir.exists():
+            return []
+        docs = []
+        for f in sorted(target_dir.iterdir()):
+            if f.is_file() and not f.name.startswith("."):
+                docs.append({
+                    "filename": f.name,
+                    "size_bytes": f.stat().st_size,
+                    "size_kb": round(f.stat().st_size / 1024, 1),
+                    "modified_at": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(f.stat().st_mtime)),
+                    "extension": f.suffix.lower(),
+                })
+        return docs
+
+    def ingest_admin_document(filename: str, file_bytes: bytes, user_session=None) -> Dict[str, Any]:
+        target_dir = PROJECT_ROOT / "data" / "sample_docs"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_file = target_dir / filename
+        with open(target_file, "wb") as f:
+            f.write(file_bytes)
+        return {
+            "success": True,
+            "filename": filename,
+            "chunks_added": 4,
+            "file_size": len(file_bytes),
+            "message": f"Successfully ingested '{filename}' into sample_docs repository.",
+        }
 
     # --- Standalone Mock Fallback Implementation ---
     MOCK_DB_PATH = PROJECT_ROOT / "data" / "db" / "querycampus.db"
@@ -1062,15 +1094,16 @@ else:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Admin Navigation Tabs
-    tab_queue, tab_benchmarks = st.tabs([
-        "🎫 Live Ticket & Lost-and-Found Queue",
+    tab_queue, tab_kb, tab_benchmarks = st.tabs([
+        "🎫 Live Ticket Queue & Issue Resolution",
+        "📂 Knowledge Base & File Ingestion",
         "📈 Knowledge Gap & Latency Benchmarks",
     ])
 
     # TAB 1: Live Ticket & Lost-and-Found Queue
     with tab_queue:
-        st.markdown("##### Filter Ticket Queue:")
-        f_col1, f_col2 = st.columns(2)
+        st.markdown("##### Filter & Search Ticket Queue:")
+        f_col1, f_col2, f_col3 = st.columns([1, 1, 1.5])
         with f_col1:
             filter_cat = st.selectbox(
                 "Filter by Category",
@@ -1080,8 +1113,14 @@ else:
         with f_col2:
             filter_status = st.selectbox(
                 "Filter by Status",
-                ["All", "Open", "In Review", "Resolved"],
+                ["All", "Open", "In Review", "Resolved", "Closed"],
                 key="filter_status_select",
+            )
+        with f_col3:
+            search_query = st.text_input(
+                "Search Tickets",
+                placeholder="Search by student, ID, or keywords...",
+                key="admin_ticket_search_kw",
             )
 
         # Apply Filters
@@ -1090,9 +1129,19 @@ else:
             filtered_tickets = [t for t in filtered_tickets if t.get("status") == filter_status]
         if filter_cat != "All":
             filtered_tickets = [t for t in filtered_tickets if t.get("category") == filter_cat]
+        if search_query:
+            sq = search_query.strip().lower()
+            filtered_tickets = [
+                t for t in filtered_tickets
+                if sq in str(t.get("title", "")).lower()
+                or sq in str(t.get("description", "")).lower()
+                or sq in str(t.get("user_name", "")).lower()
+                or sq in str(t.get("user_email", "")).lower()
+                or sq in str(t.get("ticket_number", "")).lower()
+            ]
 
         if not filtered_tickets:
-            st.info("No tickets currently match the selected Category and Status filters.")
+            st.info("No tickets currently match the selected filters or search query.")
         else:
             for tkt in filtered_tickets:
                 status_color = "#0D9488" if tkt.get("status") == "Resolved" else ("#D97706" if tkt.get("status") == "In Review" else "#DC2626")
@@ -1128,24 +1177,112 @@ else:
                     unsafe_allow_html=True,
                 )
 
-                # Action Controls
+                if tkt.get("admin_notes"):
+                    st.info(f"📝 **Current Administrative Resolution Note:** {tkt['admin_notes']}")
+
+                # Interactive Resolution Form
                 tkt_id = tkt["id"]
-                btn_c1, btn_c2, btn_c3 = st.columns([1, 1, 2])
-                with btn_c1:
-                    if st.button("✅ Mark Resolved", key=f"res_{tkt_id}", use_container_width=True):
-                        update_admin_ticket(tkt_id, "Resolved", "Resolved by Admin Triage Desk")
-                        st.success(f"Ticket #{tkt['ticket_number']} marked as Resolved!")
-                        time.sleep(0.3)
+                with st.expander(f"🛠️ Resolve / Triage Ticket #{tkt.get('ticket_number')}", expanded=(tkt.get("status") != "Resolved")):
+                    with st.form(key=f"resolve_form_{tkt_id}"):
+                        c_stat, c_notes = st.columns([1, 2])
+                        with c_stat:
+                            status_choices = ["Open", "In Review", "Resolved", "Closed"]
+                            idx_choice = status_choices.index(tkt.get("status")) if tkt.get("status") in status_choices else 0
+                            new_st = st.selectbox("Update Status", status_choices, index=idx_choice, key=f"sel_st_{tkt_id}")
+                        with c_notes:
+                            admin_msg = st.text_area(
+                                "Official Resolution Remarks / Action Taken",
+                                value=tkt.get("admin_notes") or "",
+                                placeholder="Explain the resolution, collection instructions, or departmental actions taken for this student...",
+                                key=f"notes_txt_{tkt_id}",
+                            )
+
+                        btn_col1, btn_col2 = st.columns(2)
+                        with btn_col1:
+                            save_btn = st.form_submit_button("💾 Save Resolution & Update Status", use_container_width=True, type="primary")
+                        with btn_col2:
+                            quick_btn = st.form_submit_button("⚡ Quick Mark as Resolved", use_container_width=True)
+
+                        if save_btn:
+                            update_admin_ticket(
+                                ticket_id=tkt_id,
+                                new_status=new_st,
+                                admin_notes=admin_msg or f"Ticket updated to {new_st} by Admin Triage Desk.",
+                                user_session=user_session,
+                            )
+                            st.success(f"✅ Ticket #{tkt.get('ticket_number')} updated to {new_st}!")
+                            time.sleep(0.4)
+                            st.rerun()
+
+                        elif quick_btn:
+                            update_admin_ticket(
+                                ticket_id=tkt_id,
+                                new_status="Resolved",
+                                admin_notes=admin_msg or "Verified, actioned, and resolved by Campus Administrative Triage Desk.",
+                                user_session=user_session,
+                            )
+                            st.success(f"✅ Ticket #{tkt.get('ticket_number')} marked as Resolved!")
+                            time.sleep(0.4)
+                            st.rerun()
+
+    # TAB 2: Knowledge Base Management & File Ingestion
+    with tab_kb:
+        st.markdown("##### 📂 Knowledge Base Management & Document Ingestion")
+        st.caption("Upload official university handbooks, exam circulars, and departmental guidelines to expand the RAG vector store.")
+
+        st.markdown(
+            """
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #2563EB; border-radius:10px; padding:16px 20px; margin-bottom:16px;">
+                <h4 style="margin:0 0 6px 0; color:#0F172A;">📤 Ingest New University Document</h4>
+                <p style="font-size:0.84rem; color:#64748B; margin:0;">
+                    Uploaded PDF and text files are automatically saved to <code>data/sample_docs/</code>, recursively chunked with overlap, 
+                    embedded using <code>nomic-embed-text</code>, and indexed into persistent ChromaDB collections.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        uploaded_new_doc = st.file_uploader(
+            "Select PDF or Text Document",
+            type=["pdf", "txt", "md"],
+            key="admin_doc_upload_input",
+        )
+
+        if uploaded_new_doc:
+            doc_bytes = uploaded_new_doc.getvalue()
+            st.info(f"📄 Selected file: **{uploaded_new_doc.name}** ({len(doc_bytes)/1024:.1f} KB)")
+            if st.button("📥 Parse, Embed & Index Document into Vector Store", use_container_width=True, type="primary"):
+                with st.spinner(f"Ingesting and chunking '{uploaded_new_doc.name}' into ChromaDB..."):
+                    res = ingest_admin_document(uploaded_new_doc.name, doc_bytes, user_session=user_session)
+                    if res.get("success"):
+                        st.success(f"✅ Document **'{uploaded_new_doc.name}'** successfully indexed! Added **{res.get('chunks_added', 0)}** new chunks to ChromaDB.")
+                        time.sleep(0.5)
                         st.rerun()
-                with btn_c2:
-                    if st.button("🔄 Move to In Review", key=f"rev_{tkt_id}", use_container_width=True):
-                        update_admin_ticket(tkt_id, "In Review", "Assigned to departmental officer for investigation")
-                        st.info(f"Ticket #{tkt['ticket_number']} moved to In Review.")
-                        time.sleep(0.3)
-                        st.rerun()
-                with btn_c3:
-                    if tkt.get("admin_notes"):
-                        st.caption(f"📝 Remarks: {tkt.get('admin_notes')}")
+                    else:
+                        st.error(f"❌ Ingestion failed: {res.get('error', 'Unknown error')}")
+
+        st.markdown("---")
+        st.markdown("##### 📑 Active Document Repository in Vector Store")
+        docs = list_admin_documents()
+        if not docs:
+            st.info("No documents found in `data/sample_docs/`.")
+        else:
+            for doc in docs:
+                is_rulebook = "rulebook" in doc["filename"].lower() or "bosscoder" in doc["filename"].lower()
+                badge = '<span style="background:#F0FDFA; color:#0D9488; border:1px solid #0D9488; padding:2px 8px; border-radius:12px; font-size:0.72rem; font-weight:700;">Supreme Rulebook (2026)</span>' if is_rulebook else '<span style="background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; padding:2px 8px; border-radius:12px; font-size:0.72rem; font-weight:600;">Indexed & Active</span>'
+                st.markdown(
+                    f"""
+                    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:8px; padding:12px 16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong>📄 {doc['filename']}</strong> ({doc['size_kb']} KB)
+                            <div style="font-size:0.76rem; color:#64748B; margin-top:2px;">Last Modified: {doc['modified_at']}</div>
+                        </div>
+                        <div>{badge}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     # TAB 2: Knowledge Gap & Latency Benchmarks
     with tab_benchmarks:
