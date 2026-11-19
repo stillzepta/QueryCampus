@@ -231,7 +231,14 @@ def app(environ: Dict[str, Any], start_response: Any):
     """
     Standard WSGI Callable for Vercel Python runtime.
     """
-    path = environ.get("PATH_INFO", "/").rstrip("/") or "/"
+    raw_path = environ.get("PATH_INFO", "/").strip()
+    # Handle Vercel rewrite prefix if present
+    if raw_path.startswith("/api/index.py"):
+        raw_path = raw_path[len("/api/index.py"):]
+    elif raw_path.startswith("/api/index"):
+        raw_path = raw_path[len("/api/index"):]
+
+    path = raw_path.rstrip("/") or "/"
     method = environ.get("REQUEST_METHOD", "GET").upper()
 
     # Handle CORS Preflight
