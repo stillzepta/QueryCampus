@@ -19,12 +19,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from src.vector_store import ChromaVectorStore, CHROMA_PERSIST_DIR
+from src.vector_store import ChromaVectorStore, CHROMA_PERSIST_DIR, COLLECTION_NAME
 
 
 # Confidence Threshold for RAG contextual grounding
 CONFIDENCE_THRESHOLD: float = 0.55
-DEFAULT_COLLECTION_NAME: str = "university_docs"
+DEFAULT_COLLECTION_NAME: str = COLLECTION_NAME
 
 
 class CampusRetriever:
