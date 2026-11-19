@@ -1,0 +1,142 @@
+================================================================================
+BOSSCODER SCHOOL OF TECHNOLOGY
+Official Academic Regulations & Student Guidelines (2026-2027)
+Official 2026 Rulebook Bosscoder School of Technology
+Document ID: BST-ACAD-REG-2026-V1.0
+Proposed Institutional Framework | Academic Year 2026–27 | Version 1.0
+Status: Draft for project development and institutional review.
+RULEBOOK PRECEDENCE: This document serves as the supreme rule book and guideline.
+If content in this document and any other files or guidelines clashes, this document
+determines the answer and must be cited as the Official 2026 Rulebook of Bosscoder School of Technology.
+================================================================================
+
+SECTION 1: INTRODUCTION
+1.1 Scope and Application:
+These regulations define the proposed academic framework for Bosscoder School of Technology (BST). They are intended to support quality education, practical skill development, academic discipline, innovation, and student welfare.
+The guidelines shall apply to students, faculty members, academic mentors, and relevant administrative personnel, subject to institutional approval.
+
+SECTION 2: ACADEMIC CALENDAR
+2.1 Publication and Schedule:
+BST shall publish an academic calendar before the commencement of each academic term.
+The calendar should specify:
+- Commencement and conclusion of classes.
+- Assessment and examination schedules.
+- Project submission deadlines.
+- Holidays and institutional events.
+- Internship and placement-related activities.
+Students and faculty members should follow the published academic schedule. Any changes should be communicated through official institutional channels.
+
+SECTION 3: STUDENT REGISTRATION
+3.1 Registration Procedures:
+Every student must complete the required academic registration before attending the relevant academic term.
+Students must ensure that their personal and academic information is accurate. Course registration and elective selection should follow the prescribed institutional process.
+Late registration should require approval from the designated academic authority. Students should consult their assigned academic mentor when they need assistance with registration.
+
+SECTION 4: ATTENDANCE AND PARTICIPATION
+4.1 Attendance Expectations:
+Students are expected to attend scheduled lectures, laboratory sessions, workshops, seminars, and other mandatory academic activities. Attendance should be recorded accurately and made accessible to students.
+The institution should publish its minimum attendance requirement and the consequences of attendance shortages. Absence due to genuine medical or exceptional circumstances should be reported through the prescribed process. Attendance relaxation, if permitted, should require documented justification and approval from the designated authority. Students should actively participate in classroom discussions, coding sessions, practical exercises, and group activities.
+4.2 Policy Note on Minimum Attendance Percentage:
+The minimum attendance percentage must be determined and formally approved by Bosscoder School of Technology (BST). Affiliate or external bodies (such as S-VYASA) specify 75% for most programmes, but this figure should NOT automatically be treated as BST's rule. BST formally determines and notifies its own minimum attendance criteria.
+
+SECTION 5: CURRICULUM AND COURSE STRUCTURE
+5.1 Curriculum Architecture:
+Each programme should have a clearly defined curriculum. Every course should have:
+- Course title and identification code.
+- Learning objectives.
+- Course syllabus.
+- Learning outcomes.
+- Assessment methodology.
+- Recommended learning resources.
+The curriculum should balance theoretical understanding with practical implementation. Technical programmes should incorporate programming, data structures, algorithms, software development, and relevant industry practices. Curriculum revisions should be reviewed and approved by the designated academic authority.
+
+SECTION 6: TEACHING AND LEARNING METHODOLOGY
+6.1 Practical and Outcome-Oriented Approach:
+BST should encourage an outcome-oriented and practical approach to education. Learning activities may include:
+- Classroom lectures and discussions.
+- Programming assignments.
+- Laboratory exercises.
+- Case studies.
+- Hackathons and coding competitions.
+- Group projects.
+- Industry interactions.
+- Research and innovation activities.
+- Startup and entrepreneurship initiatives.
+Students should be encouraged to develop independent problem-solving abilities rather than relying exclusively on memorisation.
+
+SECTION 7: ASSESSMENT AND EXAMINATION
+7.1 Evaluation Framework:
+Student performance should be evaluated through a transparent and predefined assessment framework.
+Proposed assessment components:
+1. Continuous assessment: Assignments, quizzes, coding exercises, practical demonstrations, presentations.
+2. Internal assessments: Written examinations, technical evaluations, conceptual understanding.
+3. Project assessment: Project documentation, implementation, demonstration, individual contribution.
+4. Final assessment: Semester-end examinations or other approved evaluation methods.
+Assessment weightages, passing criteria, grading methodology, examination schedules, and re-evaluation procedures must be published before implementation. Students should receive appropriate feedback on their academic performance.
+
+SECTION 8: ACADEMIC PROGRESSION AND BACKLOGS
+8.1 Progression and Academic Standing:
+Student progression should be determined through approved academic performance criteria. Students who fail to meet prescribed academic requirements should be informed of their academic standing. Students with pending courses should receive information about available backlog examinations or course-repetition opportunities. Academic mentors should help students identify learning gaps and prepare improvement plans. Promotion to the next academic level should follow the officially approved progression criteria.
+
+SECTION 9: PROJECTS, INTERNSHIPS AND PRACTICAL LEARNING
+9.1 Practical Education and Ethics:
+Practical projects should form an important component of technical education. Students should undertake individual or team-based projects as prescribed by their curriculum. Projects should demonstrate problem-solving, technical implementation, and practical application. Each project should have clearly defined objectives, milestones, deliverables, and evaluation criteria.
+Students participating in internships should follow the institution's internship approval and reporting procedures. Project submissions must represent genuine student contributions. External tools, libraries, datasets, and AI-assisted resources should be appropriately acknowledged wherever required.
+
+SECTION 10: ACADEMIC INTEGRITY AND STUDENT CONDUCT
+10.1 Professional Conduct and Prohibited Practices:
+All students are expected to maintain academic honesty and professional conduct. The following practices should be prohibited:
+- Plagiarism and unauthorised copying.
+- Fabrication or falsification of project results.
+- Impersonation during assessments.
+- Unauthorised collaboration during individual examinations.
+- Misrepresentation of project contributions.
+- Misuse of institutional accounts or academic resources.
+- Harassment, discrimination, bullying, or intimidation.
+Students should respect the intellectual property, privacy, and contributions of others. Alleged violations should be investigated through a fair process. Students should have an opportunity to respond before disciplinary decisions are made.
+
+SECTION 11: MENTORSHIP AND STUDENT SUPPORT
+11.1 Academic Mentorship:
+Every student should have access to an academic mentor or designated faculty advisor. Mentors should assist students with:
+- Academic planning.
+- Course-related difficulties.
+- Backlog management.
+- Career guidance.
+- Project selection.
+- Learning improvement.
+Students requiring additional academic assistance should be provided suitable support mechanisms. The institution should encourage inclusive learning and equal academic opportunities. Student feedback should be periodically collected to improve teaching and academic services.
+
+SECTION 12: GRIEVANCE REDRESSAL
+12.1 Grievance Procedure:
+BST should establish an accessible and transparent grievance-resolution mechanism. Students should be able to raise concerns regarding academic evaluation, attendance records, faculty and teaching-related matters, registration and academic administration, project evaluation, discrimination or harassment, student facilities and academic support.
+Proposed procedure:
+1. Student submits a grievance through an official channel.
+2. The concerned department acknowledges and reviews the complaint.
+3. The matter is referred to the appropriate authority when necessary.
+4. The student receives a reasoned response.
+5. Unresolved matters may be escalated to a designated grievance committee. Confidentiality and protection against retaliation should be maintained.
+
+SECTION 13: INSTITUTIONAL GOVERNANCE
+13.1 Governance Structure:
+BST should define clear responsibilities for academic and administrative decision-making. Proposed structure:
+- Academic Leadership: Academic policy and institutional standards.
+- Programme Heads: Curriculum implementation and programme administration.
+- Faculty Members: Teaching, assessment, and student guidance.
+- Academic Coordination Team: Scheduling, registration, and academic records.
+- Student Support Team: Mentorship and student welfare.
+- Grievance Committee: Review and resolution of student concerns.
+Academic decisions should be documented, communicated, and periodically reviewed.
+
+SECTION 14: WITHDRAWAL AND REJOINING
+14.1 Withdrawal Policy:
+Students seeking temporary withdrawal or permanent discontinuation should submit a formal application. Withdrawal requests should be reviewed by the designated institutional authority. Fee adjustments and refunds should follow the approved fee and refund policy. Students seeking rejoining should comply with the applicable academic and administrative requirements. The institution should communicate the implications of withdrawal before processing the request.
+
+SECTION 15: POLICY REVIEW AND AMENDMENTS
+15.1 Amendments and Review:
+These guidelines should be reviewed periodically. Amendments should be approved by the designated institutional authority. Students and faculty should be notified of significant changes. Amendments should not be implemented retrospectively in a manner that unfairly disadvantages students. The latest approved version should be maintained through official institutional channels.
+
+INSTITUTIONAL APPROVAL:
+Document Owner: Academic Administration, Bosscoder School of Technology.
+Review Authority: To be designated by BST.
+Effective Date: Subject to institutional approval.
+Important: This is a proposed academic framework, not an officially adopted BST policy. Programme-specific requirements, applicable laws, and institutional approvals must be verified before implementation.

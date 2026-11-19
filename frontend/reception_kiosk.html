@@ -1190,8 +1190,8 @@
           <div class="tray-icon">📌</div>
           <div class="tray-body">
             <h4>Attendance & Regulations</h4>
-            <p>Mandatory 75% attendance rule, medical condonation up to 65%, and hall ticket issuance.</p>
-            <div class="tray-chip">⚖️ Academic Handbook</div>
+            <p>Official 2026 Rulebook: BST formally determines attendance criteria; S-VYASA 75% does not automatically apply.</p>
+            <div class="tray-chip">⚖️ Official 2026 Rulebook</div>
           </div>
         </div>
 
@@ -1428,10 +1428,10 @@
     const CAMPUS_OFFLINE_RAG = [
       {
         keywords: ["attendance", "condonation", "minimum", "75%"],
-        doc: "Academic Regulations Handbook (Section 1.2)",
-        page: 1,
-        similarity: 0.94,
-        answer: "According to official Bosscoder College regulations, a minimum of **75% attendance** is mandatory in every registered course to be eligible to sit for the end-semester examinations. Students with attendance between **65% and 74%** may apply for medical condonation by submitting verified hospital certificates to the Office of Academic Affairs within 7 days."
+        doc: "Official 2026 Rulebook Bosscoder School of Technology (Section 4.2)",
+        page: 2,
+        similarity: 0.96,
+        answer: "Under the **Official 2026 Rulebook of Bosscoder School of Technology** (Academic Regulations & Student Guidelines, Section 4), students are expected to attend all scheduled lectures, labs, and mandatory academic sessions. The rulebook explicitly notes that the minimum attendance percentage must be formally determined and approved by BST; while affiliate bodies (such as S-VYASA) specify 75% for most programmes, this figure should **not automatically be treated as BST's rule**. BST officially determines and publishes its own approved attendance criteria and medical condonation procedures."
       },
       {
         keywords: ["library", "timing", "hours", "cubicle", "book"],
@@ -1813,23 +1813,19 @@
       }
     }
 
-    function fillKioskDemo(email, pw) {
-      const emailField = document.getElementById("kioskEmail");
-      const pwField = document.getElementById("kioskPassword");
-      if (emailField) emailField.value = email;
-      if (pwField) pwField.value = pw;
-      const errBox = document.getElementById("kioskLoginError");
-      if (errBox) errBox.style.display = "none";
-    }
-
     async function handleKioskLogin(e) {
       e.preventDefault();
-      const email = document.getElementById("kioskEmail").value.trim().toLowerCase();
-      const pw = document.getElementById("kioskPassword").value;
+      let email = document.getElementById("kioskEmail").value.trim().toLowerCase();
+      const pw = document.getElementById("kioskPassword").value.trim();
       const errBox = document.getElementById("kioskLoginError");
       const btn = document.getElementById("kioskLoginBtn");
 
       errBox.style.display = "none";
+
+      if (!email.includes("@")) {
+        if (email === "krishna" || email === "admin") email = "krishna@bst.edu.in";
+        else if (email === "amanat" || email === "student") email = "amanat@bst.edu.in";
+      }
 
       if (!email.endsWith("@bst.edu.in")) {
         errBox.textContent = "❌ Access Restricted: Only @bst.edu.in domain emails are allowed. To create an account, please contact the campus front desk.";
@@ -1838,7 +1834,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = "Verifying with Supabase Cloud...";
+      btn.textContent = "Verifying credentials...";
 
       try {
         const resp = await fetch("/api/auth/login", {
@@ -1897,15 +1893,15 @@
           <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px;">
             Institutional Email Address
           </label>
-          <input type="text" id="kioskEmail" placeholder="e.g. amanat@bst.edu.in or krishna@bst.edu.in" required
+          <input type="text" id="kioskEmail" placeholder="name@bst.edu.in" required
                  style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; outline: none;">
         </div>
 
         <div style="margin-bottom: 16px;">
           <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px;">
-            Account Password
+            Password
           </label>
-          <input type="password" id="kioskPassword" placeholder="Enter your password" required
+          <input type="password" id="kioskPassword" placeholder="••••••••••••" required
                  style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; outline: none;">
         </div>
 
@@ -1913,33 +1909,12 @@
 
         <button type="submit" id="kioskLoginBtn"
                 style="width: 100%; padding: 12px; background: var(--c-lime-green); color: var(--c-deep-purple); border: none; border-radius: 8px; font-weight: 800; font-size: 0.94rem; cursor: pointer; box-shadow: var(--lime-glow);">
-          🔐 Sign In to Activate Kiosk
+          🔐 Sign In
         </button>
       </form>
 
-      <!-- Quick Demo Credentials -->
-      <div style="background: #F8FAFC; border: 1px dashed var(--card-border); border-radius: 8px; padding: 12px 14px; margin-top: 16px;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-          ⚡ Live Demo Evaluation Accounts
-        </div>
-        <div style="font-size: 0.8rem; color: var(--text-dark); margin-bottom: 8px; line-height: 1.5;">
-          <div>🛡️ <strong>Admin:</strong> <code>krishna@bst.edu.in</code> &nbsp;|&nbsp; PW: <code>krishna123</code></div>
-          <div>🎓 <strong>Student:</strong> <code>amanat@bst.edu.in</code> &nbsp;|&nbsp; PW: <code>amanat123</code></div>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button type="button" onclick="fillKioskDemo('krishna@bst.edu.in', 'krishna123')"
-                  style="flex: 1; padding: 6px 8px; background: #FFFFFF; border: 1px solid var(--card-border); border-radius: 6px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
-            Fill Admin
-          </button>
-          <button type="button" onclick="fillKioskDemo('amanat@bst.edu.in', 'amanat123')"
-                  style="flex: 1; padding: 6px 8px; background: #FFFFFF; border: 1px solid var(--card-border); border-radius: 6px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
-            Fill Student
-          </button>
-        </div>
-      </div>
-
       <!-- Account Creation Notice -->
-      <div style="background: rgba(13, 148, 136, 0.08); border-left: 3px solid #0D9488; border-radius: 6px; padding: 10px 12px; margin-top: 14px; font-size: 0.78rem; color: #134E4A; line-height: 1.4;">
+      <div style="background: rgba(13, 148, 136, 0.08); border-left: 3px solid #0D9488; border-radius: 6px; padding: 12px 14px; margin-top: 18px; font-size: 0.82rem; color: #134E4A; line-height: 1.5;">
         🏛️ <strong>Need an account?</strong> To create a new institutional account, please <strong>contact the campus Front Desk</strong> in person at Block A, Room 101 (Office of Academic Affairs).
       </div>
     </div>

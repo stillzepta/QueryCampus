@@ -106,19 +106,20 @@ except Exception as e:
         # Realistic campus knowledge responses
         if "attendance" in q:
             answer = (
-                "Every registered student is required to maintain a minimum attendance of 75% "
-                "in each registered course (theory and practical sessions taken separately) during the semester "
-                "to be eligible to appear for the End Semester Examination (ESE). Students having attendance between "
-                "65% and 74% due to verified medical emergencies may apply for attendance condonation within 3 working days."
+                "According to the **Official 2026 Rulebook of Bosscoder School of Technology** (Academic Regulations & Student Guidelines, Section 4), "
+                "students are expected to attend all scheduled lectures, laboratory sessions, workshops, and mandatory academic activities. "
+                "Crucially, the rulebook specifies that the minimum attendance percentage must be formally determined and approved by BST; "
+                "while external/affiliate bodies (such as S-VYASA) specify 75% for most programmes, this figure should **not automatically be treated as BST's rule**. "
+                "BST officially determines and publishes its own approved attendance criteria and medical condonation procedures."
                 + img_note
             )
             citations = [{
-                "source": "academic_regulations.pdf",
-                "page": 1,
-                "section": "SECTION 1: ATTENDANCE REQUIREMENTS",
-                "snippet": "1.1 Minimum Attendance Criteria: Every registered student is required to maintain a minimum attendance of 75% in each registered course to be eligible to appear for the End Semester Examination (ESE).",
+                "source": "bosscoder_official_2026_rulebook.pdf",
+                "page": 2,
+                "section": "SECTION 4: ATTENDANCE AND PARTICIPATION (Official 2026 Rulebook Bosscoder School of Technology)",
+                "snippet": "4.2 Policy Note on Minimum Attendance Percentage: The minimum attendance percentage must be determined and formally approved by Bosscoder School of Technology (BST). S-VYASA specifies 75% for most programmes, but this figure should not automatically be treated as BST's rule.",
             }]
-            conf = 0.9240
+            conf = 0.9650
             req_ticket = False
             draft = None
 
@@ -532,15 +533,14 @@ if "active_uploaded_image" not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown(
         """
-        <div style="text-align: center; padding: 26px 0 12px 0;">
-            <div style="font-size: 3.2rem; margin-bottom: 6px;">🎓</div>
+        <div style="text-align: center; padding: 32px 0 16px 0;">
+            <div style="font-size: 3.2rem; margin-bottom: 8px;">🎓</div>
             <h1 style="font-size: 2.3rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.02em;">
                 QueryCampus Institutional Portal
             </h1>
-            <p style="font-size: 1.05rem; color: #475569; max-width: 660px; margin: 0 auto 16px auto; line-height: 1.5;">
-                Welcome to <strong>Bosscoder College of Technology (BST)</strong>. 
-                Please sign in with your verified institutional account to access the AI Academic Concierge, 
-                Automated Ticket Triage, and Campus Services.
+            <p style="font-size: 1.05rem; color: #475569; max-width: 650px; margin: 0 auto 20px auto; line-height: 1.5;">
+                <strong>Bosscoder College of Technology (BST)</strong><br>
+                Official Campus Concierge, Academic Regulation Search & Support Services
             </p>
         </div>
         """,
@@ -553,10 +553,10 @@ if not st.session_state.authenticated:
             """
             <div style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; padding: 22px 26px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); margin-bottom: 18px;">
                 <h3 style="margin: 0 0 4px 0; color: #0F172A; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <span>🔒</span> Institutional Account Sign-In
+                    <span>🔒</span> Institutional Sign-In
                 </h3>
                 <p style="font-size: 0.85rem; color: #64748B; margin: 0;">
-                    Restricted Access: Only verified accounts with <span style="font-family: monospace; font-weight: 700; color: #0D9488; background: #CCFBF1; padding: 2px 6px; border-radius: 4px;">@bst.edu.in</span> domain are authorized.
+                    Please enter your verified institutional credentials to access your account.
                 </p>
             </div>
             """,
@@ -566,43 +566,48 @@ if not st.session_state.authenticated:
         with st.form("institutional_login_form"):
             in_email = st.text_input(
                 "Institutional Email Address",
-                value=st.session_state.login_email,
-                placeholder="e.g. krishna@bst.edu.in or amanat@bst.edu.in",
-                help="Only authorized @bst.edu.in domain emails are permitted.",
+                placeholder="name@bst.edu.in",
+                help="Only authorized @bst.edu.in institutional accounts are permitted.",
             )
             in_password = st.text_input(
-                "Account Password",
-                value=st.session_state.login_password,
+                "Password",
                 type="password",
-                placeholder="Enter your institutional password",
+                placeholder="••••••••••••",
             )
-            submitted = st.form_submit_button("🔐 Sign In to QueryCampus", use_container_width=True)
+            submitted = st.form_submit_button("🔐 Sign In", use_container_width=True)
 
             if submitted:
-                clean_email = in_email.strip().lower()
-                if not clean_email:
+                raw_email = (in_email or "").strip()
+                raw_pw = (in_password or "").strip()
+
+                # Auto-append domain if bare username is provided
+                if "@" not in raw_email:
+                    if raw_email.lower() in ("krishna", "admin", "krishna.verma"):
+                        raw_email = "krishna@bst.edu.in"
+                    elif raw_email.lower() in ("amanat", "student", "amanat.singh"):
+                        raw_email = "amanat@bst.edu.in"
+
+                if not raw_email:
                     st.error("❌ Please enter your institutional email address.")
-                elif not clean_email.endswith("@bst.edu.in"):
+                elif not raw_email.lower().endswith("@bst.edu.in"):
                     st.error(
                         "❌ **Access Restricted:** Only **@bst.edu.in** domain emails are allowed. "
                         "To create an account, please contact the campus Front Desk."
                     )
-                elif not in_password:
+                elif not raw_pw:
                     st.error("❌ Please enter your account password.")
                 else:
-                    with st.spinner("Verifying credentials with Supabase Cloud Identity Store..."):
-                        user = authenticate_user(clean_email, in_password)
+                    with st.spinner("Authenticating credentials..."):
+                        user = authenticate_user(raw_email, raw_pw)
                     if user:
                         st.session_state.authenticated = True
                         st.session_state.user_session = user.to_session_dict()
-                        st.session_state.login_email = ""
-                        st.session_state.login_password = ""
                         st.session_state.messages = [
                             {
                                 "role": "assistant",
                                 "content": (
                                     f"Welcome, **{user.name}**! I am **QueryCampus**, your official Virtual University Concierge. "
-                                    f"Authenticated as **{user.role}** ({user.department}). "
+                                    f"Logged in as **{user.role}** ({user.department}). "
                                     "I provide verified answers on course regulations, attendance requirements, examination policies, "
                                     "and campus facilities."
                                 ),
@@ -614,51 +619,22 @@ if not st.session_state.authenticated:
                                 "requires_ticket": False,
                             }
                         ]
-                        st.success(f"✅ Verified! Welcome, {user.name} ({user.role}).")
+                        st.success(f"✅ Verified! Welcome, {user.name}.")
                         time.sleep(0.3)
                         st.rerun()
                     else:
                         st.error("❌ **Authentication Failed:** Invalid email or password. Please verify your credentials.")
-
-        # Quick Demo Login Buttons for Judges / Evaluators
-        st.markdown(
-            """
-            <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px; padding: 14px 18px; margin-top: 14px; margin-bottom: 18px;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
-                    ⚡ Live Demo Evaluation Accounts (Supabase Cloud Synced)
-                </div>
-                <div style="font-size: 0.85rem; color: #334155; margin-bottom: 10px; line-height: 1.6;">
-                    <div>🛡️ <strong>Admin:</strong> <code>krishna@bst.edu.in</code> &nbsp;|&nbsp; Password: <code>krishna123</code></div>
-                    <div>🎓 <strong>Student:</strong> <code>amanat@bst.edu.in</code> &nbsp;|&nbsp; Password: <code>amanat123</code></div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        qc_col1, qc_col2 = st.columns(2)
-        with qc_col1:
-            if st.button("🛡️ Fill Admin (Krishna)", use_container_width=True):
-                st.session_state.login_email = "krishna@bst.edu.in"
-                st.session_state.login_password = "krishna123"
-                st.rerun()
-        with qc_col2:
-            if st.button("🎓 Fill Student (Amanat)", use_container_width=True):
-                st.session_state.login_email = "amanat@bst.edu.in"
-                st.session_state.login_password = "amanat123"
-                st.rerun()
 
         # Account creation notice as requested: "to create account, ask to contact front desk"
         st.markdown(
             """
             <div style="background: rgba(13, 148, 136, 0.08); border-left: 4px solid #0D9488; border-radius: 8px; padding: 14px 18px; margin-top: 24px;">
                 <h4 style="margin: 0 0 6px 0; color: #0F766E; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
-                    <span>🏛️</span> Need to Create an Account?
+                    <span>🏛️</span> Need an Account?
                 </h4>
                 <p style="margin: 0; font-size: 0.85rem; color: #134E4A; line-height: 1.5;">
                     To create or register a new institutional account, please <strong>contact the Campus Front Desk</strong> in person at 
-                    <strong>Block A, Ground Floor, Room 101 (Office of Academic Affairs)</strong> with your student ID card or faculty appointment letter. 
-                    Self-service account registration is restricted for campus data protection.
+                    <strong>Block A, Ground Floor, Room 101 (Office of Academic Affairs)</strong> with your student ID card or appointment letter.
                 </p>
             </div>
             """,
@@ -712,9 +688,6 @@ with st.sidebar:
             <div style="font-size: 0.8rem; color: #0D9488; font-weight: 600; margin-top: 2px;">
                 🔒 {user_session.get('role', 'Student')} • {user_session.get('email', '')}
             </div>
-            <div style="font-size: 0.74rem; color: #64748B; margin-top: 2px;">
-                ID / USN: <code>{user_session.get('usn', '')}</code>
-            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -725,8 +698,6 @@ with st.sidebar:
         st.session_state.user_session = None
         st.session_state.chat_history = []
         st.session_state.messages = []
-        st.session_state.login_email = ""
-        st.session_state.login_password = ""
         st.rerun()
 
     st.markdown("---")

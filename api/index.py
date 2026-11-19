@@ -140,10 +140,16 @@ except Exception as e:
         q = query.lower()
 
         if "attendance" in q:
-            answer = "Under Section 4.2 of Academic Regulations, students must maintain a minimum of 75% attendance in each registered course to be eligible for the End-Semester Examination. A condonation of up to 10% may be granted for documented medical emergencies by the Dean of Academic Affairs."
-            source = "academic_regulations.pdf"
-            page = 4
-            sec = "Section 4.2 (Attendance Policy)"
+            answer = (
+                "Under the **Official 2026 Rulebook of Bosscoder School of Technology** (Academic Regulations & Student Guidelines, Section 4), "
+                "students are expected to attend all scheduled lectures, laboratory sessions, and mandatory academic activities. "
+                "The rulebook explicitly notes that the minimum attendance percentage must be formally determined and approved by BST; "
+                "while affiliate bodies (such as S-VYASA) specify 75% for most programmes, this figure should NOT automatically be treated as BST's rule. "
+                "BST officially determines and publishes its own approved attendance criteria and medical condonation procedures."
+            )
+            source = "bosscoder_official_2026_rulebook.pdf"
+            page = 2
+            sec = "Section 4.2 (Attendance Policy Note - Official 2026 Rulebook Bosscoder School of Technology)"
         elif "curfew" in q or "hostel" in q:
             answer = "According to Hostel Regulations (Section 2.1), campus gates and hostel entries close strictly at 9:30 PM on weekdays and 10:00 PM on weekends. Late entry requires prior written approval from the Chief Hostel Warden."
             source = "hostel_and_student_services.pdf"
@@ -480,6 +486,15 @@ def app(environ: Dict[str, Any], start_response: Any):
         payload = read_payload()
         identifier = payload.get("identifier", "").strip()
         password = payload.get("password")
+        if password and isinstance(password, str):
+            password = password.strip()
+
+        # Auto-append domain if username is entered without @
+        if identifier and "@" not in identifier:
+            if identifier.lower() in ("krishna", "admin", "krishna.verma"):
+                identifier = "krishna@bst.edu.in"
+            elif identifier.lower() in ("amanat", "student", "amanat.singh"):
+                identifier = "amanat@bst.edu.in"
 
         # Restrict login to @bst.edu.in domain accounts
         if "@" in identifier and not identifier.lower().endswith("@bst.edu.in"):
@@ -494,7 +509,7 @@ def app(environ: Dict[str, Any], start_response: Any):
         user = authenticate_user(identifier, password)
         if user:
             return send_json({"authenticated": True, "user": user.to_session_dict()})
-        return send_json({"authenticated": False, "error": "Invalid credentials or unverified domain"}, status="401 Unauthorized")
+        return send_json({"authenticated": False, "error": "Invalid email or password. Please verify your credentials."}, status="401 Unauthorized")
 
     # 404 Not Found
     return send_json({"error": f"Path '{path}' not found on QueryCampus API."}, status="404 Not Found")

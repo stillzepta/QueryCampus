@@ -127,6 +127,13 @@ class CampusRetriever:
             else:
                 hybrid_score = ((1.0 - self.keyword_weight) * sem_score) + (self.keyword_weight * kw_score)
 
+            # Rulebook Precedence Boost:
+            # The Official 2026 Rulebook of Bosscoder School of Technology is the supreme authority.
+            # If content in this and other files clashes, this rulebook determines the answer.
+            src_str = str(c.get("source") or c.get("metadata", {}).get("source", "")).lower()
+            if "bosscoder" in src_str or "rulebook" in src_str:
+                hybrid_score += 0.15
+
             # Ensure normalization to [0.0, 1.0]
             final_score = max(0.0, min(1.0, hybrid_score))
 
