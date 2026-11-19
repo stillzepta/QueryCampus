@@ -17,11 +17,18 @@ import sys
 import uuid
 import sqlite3
 import datetime
+import hashlib
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Any, Union
+from typing import Optional, Dict, List, Any, Union, Tuple
 
 from dotenv import load_dotenv
+
+try:
+    import bcrypt
+    HAS_BCRYPT = True
+except ImportError:
+    HAS_BCRYPT = False
 
 load_dotenv()
 
@@ -36,7 +43,48 @@ ALLOWED_INSTITUTIONAL_DOMAINS = (
     "pesu.pes.edu",
     "pes.edu",
     "bosscoder.edu",
+    "bst.edu.in",
 )
+
+
+# ---------------------------------------------------------------------------
+# PASSWORD HASHING & CRYPTOGRAPHIC VERIFICATION
+# ---------------------------------------------------------------------------
+
+def hash_password(password: str) -> str:
+    """
+    Securely hashes a plaintext password using bcrypt (with salt) or SHA-256 fallback.
+    """
+    if not password:
+        return ""
+    if HAS_BCRYPT:
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    return "sha256$" + hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def verify_password(plain_password: str, stored_hash_or_pw: Optional[str]) -> bool:
+    """
+    Verifies a plaintext password against a stored bcrypt hash, SHA-256 hash,
+    or plaintext fallback (for mock accounts and test fixtures).
+    """
+    if not plain_password or not stored_hash_or_pw:
+        return False
+    # 1. Plaintext direct match (backward compatibility / test personas)
+    if plain_password == stored_hash_or_pw:
+        return True
+    # 2. bcrypt hash verification ($2b$ or $2a$)
+    if stored_hash_or_pw.startswith("$2b$") or stored_hash_or_pw.startswith("$2a$"):
+        if HAS_BCRYPT:
+            try:
+                return bcrypt.checkpw(plain_password.encode("utf-8"), stored_hash_or_pw.encode("utf-8"))
+            except Exception:
+                return False
+        return False
+    # 3. SHA-256 prefixed hash verification
+    if stored_hash_or_pw.startswith("sha256$"):
+        expected = "sha256$" + hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+        return stored_hash_or_pw == expected
+    return False
 
 
 class RoleStr(str):
@@ -137,6 +185,32 @@ DEFAULT_ADMIN_SESSION: Dict[str, Any] = {
 
 # Pre-configured institutional personas for 1-Click Judge Switching
 JUDGE_PERSONAS: Dict[str, Dict[str, Any]] = {
+    "krishna": {
+        "usn": "ADM-BST-001",
+        "email": "krishna@bst.edu.in",
+        "password": "krishna123",
+        "name": "Krishna Verma",
+        "role": "Admin",
+        "department": "Office of Academic Affairs & Systems Administration",
+        "semester": "Staff",
+        "id_number": "ADM-BST-001",
+        "badge_label": "System Administrator",
+        "avatar_emoji": "🛡️",
+        "bio": "Central administrator with full access to support ticket queues, escalation resolution, and knowledge base indexing.",
+    },
+    "amanat": {
+        "usn": "BST24CS001",
+        "email": "amanat@bst.edu.in",
+        "password": "amanat123",
+        "name": "Amanat Singh",
+        "role": "Student",
+        "department": "Computer Science & Engineering",
+        "semester": "6th Semester",
+        "id_number": "BST24CS001",
+        "badge_label": "Enrolled Undergraduate",
+        "avatar_emoji": "🎓",
+        "bio": "Undergraduate student inquiring about academic rules, fee structures, and campus services.",
+    },
     "student": {
         "usn": "PES2UG22CS001",
         "email": "student@pesu.pes.edu",
@@ -219,6 +293,22 @@ JUDGE_PERSONAS: Dict[str, Dict[str, Any]] = {
 
 # Backward compatibility mapping for legacy tests and mock authentication
 MOCK_USERS: Dict[str, Dict[str, str]] = {
+    "krishna@bst.edu.in": {
+        "password": "krishna123",
+        "name": "Krishna Verma",
+        "role": "admin",
+        "department": "Office of Academic Affairs & Systems Administration",
+        "id_number": "ADM-BST-001",
+        "usn": "ADM-BST-001",
+    },
+    "amanat@bst.edu.in": {
+        "password": "amanat123",
+        "name": "Amanat Singh",
+        "role": "student",
+        "department": "Computer Science & Engineering",
+        "id_number": "BST24CS001",
+        "usn": "BST24CS001",
+    },
     "serina.mehra@bosscoder.edu": {
         "password": "password123",
         "name": "Serina Mehra",
@@ -253,7 +343,7 @@ MOCK_USERS: Dict[str, Dict[str, str]] = {
 def is_valid_institutional_domain(email: str) -> bool:
     """
     Validates that an email belongs to a sanctioned institutional domain
-    (@university.edu, @college.ac.in, @university.org, @pesu.pes.edu, @pes.edu, @bosscoder.edu).
+    (@university.edu, @college.ac.in, @university.org, @pesu.pes.edu, @pes.edu, @bosscoder.edu, @bst.edu.in).
     """
     if not email or "@" not in email:
         return False
@@ -263,7 +353,7 @@ def is_valid_institutional_domain(email: str) -> bool:
     domain = parts[1]
     if domain in ALLOWED_INSTITUTIONAL_DOMAINS:
         return True
-    if domain.endswith(".edu") or domain.endswith(".ac.in"):
+    if domain.endswith(".edu") or domain.endswith(".ac.in") or domain.endswith(".edu.in"):
         return True
     return False
 
@@ -356,12 +446,20 @@ def get_supabase_client():
         return None
 
 
-def sync_user_to_supabase(user: User) -> bool:
-    """Upserts user profile into Supabase public.users table."""
+def sync_user_to_supabase(
+    user: User,
+    password: Optional[str] = None,
+    password_hash: Optional[str] = None,
+) -> bool:
+    """Upserts user profile into Supabase public.users table with optional hashed credentials."""
     client = get_supabase_client()
     if not client:
         return False
     try:
+        pw_h = password_hash
+        if not pw_h and password:
+            pw_h = hash_password(password)
+
         data = {
             "usn": user.usn,
             "name": user.name,
@@ -372,14 +470,17 @@ def sync_user_to_supabase(user: User) -> bool:
             "verified": int(user.verified),
             "last_login": datetime.datetime.now().isoformat(),
         }
+        if pw_h:
+            data["password_hash"] = pw_h
+
         client.table("users").upsert(data, on_conflict="usn").execute()
         return True
     except Exception:
         return False
 
 
-def fetch_user_from_supabase(identifier: str) -> Optional[User]:
-    """Queries user from Supabase public.users by email or USN."""
+def fetch_user_credentials_from_supabase(identifier: str) -> Optional[Dict[str, Any]]:
+    """Queries user record (including password_hash) from Supabase public.users by email or USN."""
     client = get_supabase_client()
     if not client:
         return None
@@ -387,23 +488,30 @@ def fetch_user_from_supabase(identifier: str) -> Optional[User]:
         cleaned = identifier.strip().lower()
         res = client.table("users").select("*").or_(f"email.eq.{cleaned},usn.eq.{identifier.strip()}").execute()
         if res.data and len(res.data) > 0:
-            row = res.data[0]
-            role = RoleStr(row.get("role", "Student").capitalize())
-            return User(
-                usn=row["usn"],
-                name=row["name"],
-                email=row["email"],
-                department=row["department"],
-                semester=row.get("semester"),
-                role=role,
-                verified=int(row.get("verified", 1)),
-                last_login=str(row.get("last_login", "")),
-                badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
-                avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
-            )
+            return res.data[0]
     except Exception:
         pass
     return None
+
+
+def fetch_user_from_supabase(identifier: str) -> Optional[User]:
+    """Queries user profile from Supabase public.users by email or USN."""
+    row = fetch_user_credentials_from_supabase(identifier)
+    if not row:
+        return None
+    role = RoleStr(row.get("role", "Student").capitalize())
+    return User(
+        usn=row["usn"],
+        name=row["name"],
+        email=row["email"],
+        department=row["department"],
+        semester=row.get("semester"),
+        role=role,
+        verified=int(row.get("verified", 1)),
+        last_login=str(row.get("last_login", "")),
+        badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
+        avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -431,10 +539,17 @@ def init_auth_db(db_path: Optional[Union[str, Path]] = None) -> sqlite3.Connecti
                 semester TEXT,
                 role TEXT CHECK(role IN ('Student', 'Admin')) NOT NULL,
                 verified INTEGER DEFAULT 1,
-                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                password_hash TEXT
             )
             """
         )
+        # Migrate existing table if password_hash column is missing
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+        except sqlite3.OperationalError:
+            pass
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS user_sessions (
@@ -453,10 +568,12 @@ def init_auth_db(db_path: Optional[Union[str, Path]] = None) -> sqlite3.Connecti
         cursor = conn.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
             for persona in JUDGE_PERSONAS.values():
+                p_pw = persona.get("password", "password123")
+                p_hash = hash_password(p_pw)
                 conn.execute(
                     """
-                    INSERT INTO users (usn, name, email, department, semester, role, verified)
-                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                    INSERT INTO users (usn, name, email, department, semester, role, verified, password_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
                     """,
                     (
                         persona["usn"],
@@ -465,6 +582,35 @@ def init_auth_db(db_path: Optional[Union[str, Path]] = None) -> sqlite3.Connecti
                         persona["department"],
                         persona.get("semester", "N/A"),
                         persona["role"].capitalize(),
+                        p_hash,
+                    ),
+                )
+
+        # Ensure demo accounts (Krishna Admin & Amanat Student) exist in SQLite
+        for p_key in ("krishna", "amanat"):
+            if p_key in JUDGE_PERSONAS:
+                p = JUDGE_PERSONAS[p_key]
+                p_hash = hash_password(p["password"])
+                conn.execute(
+                    """
+                    INSERT INTO users (usn, name, email, department, semester, role, verified, password_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                    ON CONFLICT(usn) DO UPDATE SET
+                        name = excluded.name,
+                        email = excluded.email,
+                        department = excluded.department,
+                        semester = excluded.semester,
+                        role = excluded.role,
+                        password_hash = coalesce(excluded.password_hash, users.password_hash)
+                    """,
+                    (
+                        p["usn"],
+                        p["name"],
+                        p["email"].lower(),
+                        p["department"],
+                        p.get("semester", "N/A"),
+                        p["role"].capitalize(),
+                        p_hash,
                     ),
                 )
 
@@ -478,6 +624,7 @@ def register_user(
     department: str,
     semester: str = "1st Semester",
     role: str = "Student",
+    password: Optional[str] = None,
     db_path: Optional[Path] = None,
 ) -> User:
     """Registers a new institutional user with domain validation and syncs to Supabase."""
@@ -496,22 +643,25 @@ def register_user(
     if norm_role not in ("Student", "Admin"):
         norm_role = Role.STUDENT
 
+    pw_hash = hash_password(password) if password else None
+
     target_path = Path(db_path or DB_PATH)
     conn = init_auth_db(target_path)
     with conn:
         conn.execute(
             """
-            INSERT INTO users (usn, name, email, department, semester, role, verified, last_login)
-            VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+            INSERT INTO users (usn, name, email, department, semester, role, verified, last_login, password_hash)
+            VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, ?)
             ON CONFLICT(usn) DO UPDATE SET
                 name = excluded.name,
                 email = excluded.email,
                 department = excluded.department,
                 semester = excluded.semester,
                 role = excluded.role,
-                last_login = CURRENT_TIMESTAMP
+                last_login = CURRENT_TIMESTAMP,
+                password_hash = coalesce(excluded.password_hash, users.password_hash)
             """,
-            (cleaned_usn, name.strip(), cleaned_email, department.strip(), semester, str(norm_role)),
+            (cleaned_usn, name.strip(), cleaned_email, department.strip(), semester, str(norm_role), pw_hash),
         )
 
     user = User(
@@ -525,8 +675,8 @@ def register_user(
         verified=1,
     )
 
-    # Sync to Supabase in background/inline
-    sync_user_to_supabase(user)
+    # Sync to Supabase in background/inline with password hash
+    sync_user_to_supabase(user, password_hash=pw_hash)
     return user
 
 
@@ -536,43 +686,86 @@ def authenticate_user(
     db_path: Optional[Path] = None,
 ) -> Optional[User]:
     """
-    Verifies user credentials against Judge Personas, MOCK_USERS, SQLite identity store,
-    and Supabase cloud. Returns User object on success, None on failure.
+    Verifies user credentials with RBAC enforcement against:
+    1. Pre-configured Judge Personas & MOCK_USERS
+    2. Supabase Cloud PostgreSQL Identity Store (`public.users` table with password verification)
+    3. SQLite Identity Store (`users` table with password verification)
+
+    Returns User object on successful password authentication, or None on failure.
     """
+    if not identifier:
+        return None
+
     cleaned_id = identifier.strip().lower()
 
     # 1. Check pre-configured Judge Personas
     for persona_key, data in JUDGE_PERSONAS.items():
-        if (data["email"].lower() == cleaned_id or data["usn"].lower() == cleaned_id):
-            if password is not None and data.get("password") != password:
-                return None
+        if data["email"].lower() == cleaned_id or data["usn"].lower() == cleaned_id:
+            if password is not None:
+                if not verify_password(password, data.get("password")):
+                    return None  # Password mismatch!
+            role = RoleStr(data["role"].capitalize())
             return User(
                 usn=data["usn"],
                 id_number=data["id_number"],
                 email=data["email"],
                 name=data["name"],
-                role=RoleStr(data["role"].capitalize()),
+                role=role,
                 department=data["department"],
                 semester=data.get("semester"),
-                badge_label=data.get("badge_label", "Student"),
-                avatar_emoji=data.get("avatar_emoji", "🎓"),
+                badge_label=data.get("badge_label", "Administrator" if role == Role.ADMIN else "Enrolled Student"),
+                avatar_emoji=data.get("avatar_emoji", "🛡️" if role == Role.ADMIN else "🎓"),
             )
 
-    # Check MOCK_USERS mapping
+    # 2. Check MOCK_USERS mapping
     if cleaned_id in MOCK_USERS:
         m = MOCK_USERS[cleaned_id]
-        if password is not None and m["password"] != password:
-            return None
+        if password is not None:
+            if not verify_password(password, m.get("password")):
+                return None  # Password mismatch!
+        role = RoleStr(m["role"].capitalize())
         return User(
             usn=m.get("usn", m["id_number"]),
             id_number=m["id_number"],
             email=cleaned_id,
             name=m["name"],
-            role=RoleStr(m["role"].capitalize()),
+            role=role,
             department=m["department"],
+            badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
+            avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
         )
 
-    # 2. Check SQLite Identity Store
+    # 3. Check Supabase Cloud Store (`public.users`)
+    cloud_cred = fetch_user_credentials_from_supabase(cleaned_id)
+    if cloud_cred:
+        stored_hash = cloud_cred.get("password_hash")
+        if password is not None:
+            if stored_hash and not verify_password(password, stored_hash):
+                return None  # Password mismatch on Supabase!
+        role = RoleStr(cloud_cred.get("role", "Student").capitalize())
+        user = User(
+            usn=cloud_cred["usn"],
+            id_number=cloud_cred["usn"],
+            name=cloud_cred["name"],
+            email=cloud_cred["email"],
+            department=cloud_cred["department"],
+            semester=cloud_cred.get("semester"),
+            role=role,
+            verified=int(cloud_cred.get("verified", 1)),
+            last_login=str(cloud_cred.get("last_login", "")),
+            badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
+            avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
+        )
+        # Update last_login in Supabase
+        client = get_supabase_client()
+        if client:
+            try:
+                client.table("users").update({"last_login": datetime.datetime.now().isoformat()}).eq("usn", user.usn).execute()
+            except Exception:
+                pass
+        return user
+
+    # 4. Check SQLite Identity Store
     target_path = Path(db_path or DB_PATH)
     conn = init_auth_db(target_path)
     with conn:
@@ -582,6 +775,10 @@ def authenticate_user(
         )
         row = cursor.fetchone()
         if row:
+            stored_hash = row["password_hash"] if "password_hash" in row.keys() else None
+            if password is not None:
+                if stored_hash and not verify_password(password, stored_hash):
+                    return None  # Password mismatch on SQLite!
             conn.execute(
                 "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE usn = ?",
                 (row["usn"],),
@@ -600,11 +797,6 @@ def authenticate_user(
                 badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
                 avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
             )
-
-    # 3. Check Supabase Cloud Store
-    cloud_user = fetch_user_from_supabase(cleaned_id)
-    if cloud_user:
-        return cloud_user
 
     return None
 
@@ -751,10 +943,16 @@ def render_auth_sidebar():
         else:
             st.warning(f"⚠️ Unverified Domain: {email}")
 
-        with st.expander("🔑 Institutional Sign-In", expanded=False):
+        with st.expander("🔑 Institutional Sign-In (Demo Credentials)", expanded=False):
+            st.markdown(
+                """
+                **Live Demo Accounts (Synced with Supabase Cloud):**
+                - 🛡️ **Admin:** `krishna@bst.edu.in` &nbsp;|&nbsp; PW: `krishna123`
+                - 🎓 **Student:** `amanat@bst.edu.in` &nbsp;|&nbsp; PW: `amanat123`
+                """
+            )
             with st.form("sidebar_auth_form"):
-                in_usn = st.text_input("USN / Roll Number", value=sess.get("usn", ""))
-                in_email = st.text_input("Institutional Email", value=email)
+                in_email = st.text_input("Institutional Email or USN", value=email)
                 in_password = st.text_input("Password", type="password")
                 submitted = st.form_submit_button("Verify & Authenticate")
                 if submitted:
@@ -765,11 +963,12 @@ def render_auth_sidebar():
                         st.rerun()
                     elif is_valid_institutional_domain(in_email):
                         user = register_user(
-                            usn=in_usn or f"ID-{int(datetime.datetime.now().timestamp())}",
+                            usn=f"ID-{int(datetime.datetime.now().timestamp())}",
                             name=in_email.split("@")[0].replace(".", " ").title(),
                             email=in_email,
                             department="Academic Affairs",
                             role="Student",
+                            password=in_password or None,
                         )
                         st.session_state.user_session = user.to_session_dict()
                         st.success(f"Verified & Logged in as {user.name}!")

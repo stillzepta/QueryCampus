@@ -47,6 +47,34 @@ def test_admin_authentication():
     assert user.id_number == "ADM-PES-042"
 
 
+def test_demo_krishna_admin_authentication():
+    # Correct password
+    admin_user = authenticate_user("krishna@bst.edu.in", "krishna123")
+    assert admin_user is not None
+    assert admin_user.role == "Admin"
+    assert admin_user.is_admin is True
+    assert admin_user.is_student is False
+    assert admin_user.usn == "ADM-BST-001"
+    assert admin_user.email == "krishna@bst.edu.in"
+
+    # Incorrect password rejection
+    assert authenticate_user("krishna@bst.edu.in", "wrongpass") is None
+
+
+def test_demo_amanat_student_authentication():
+    # Correct password
+    student_user = authenticate_user("amanat@bst.edu.in", "amanat123")
+    assert student_user is not None
+    assert student_user.role == "Student"
+    assert student_user.is_student is True
+    assert student_user.is_admin is False
+    assert student_user.usn == "BST24CS001"
+    assert student_user.email == "amanat@bst.edu.in"
+
+    # Incorrect password rejection
+    assert authenticate_user("amanat@bst.edu.in", "wrongpass") is None
+
+
 def test_invalid_authentication():
     assert authenticate_user("unknown@pesu.pes.edu", "wrong") is None
     assert authenticate_user("student@pesu.pes.edu", "wrongpassword") is None
@@ -84,6 +112,8 @@ def test_domain_validation():
     assert is_valid_institutional_domain("admin@university.org") is True
     assert is_valid_institutional_domain("alex@pesu.pes.edu") is True
     assert is_valid_institutional_domain("registrar@pes.edu") is True
+    assert is_valid_institutional_domain("krishna@bst.edu.in") is True
+    assert is_valid_institutional_domain("amanat@bst.edu.in") is True
     assert is_valid_institutional_domain("hacker@gmail.com") is False
     assert is_valid_institutional_domain("user@yahoo.co.in") is False
     assert validate_institutional_email("student@university.edu") is True
