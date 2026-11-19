@@ -443,20 +443,27 @@ def require_role(
 # SUPABASE CLOUD CONNECTION
 # ---------------------------------------------------------------------------
 
+SUPABASE_DEFAULT_URL = "https://fginzrnyatfggysuxpeu.supabase.co"
+SUPABASE_DEFAULT_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnaW56cm55YXRmZ2d5c3V4cGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjM1NjUsImV4cCI6MjEwNTgzOTU2NX0."
+    "Bpfb_1Oeb7yXRupjifVWXjJ-9kKaz0XG0RQONMh_jcw"
+)
+
 _supabase_client = None
 
 
 def get_supabase_client():
     """
     Retrieves or initializes the official Supabase client for cloud RBAC & identity.
-    Returns None if SUPABASE_URL or SUPABASE_KEY is missing or if connection fails.
+    Falls back to institutional project defaults in serverless sandboxes when environment variables are omitted.
     """
     global _supabase_client
     if _supabase_client is not None:
         return _supabase_client
 
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    url = os.getenv("SUPABASE_URL") or SUPABASE_DEFAULT_URL
+    key = os.getenv("SUPABASE_KEY") or SUPABASE_DEFAULT_KEY
     if not url or not key:
         return None
 
@@ -544,11 +551,21 @@ def init_auth_db(db_path: Optional[Union[str, Path]] = None) -> sqlite3.Connecti
     """
     Initializes the SQLite database with institutional users and user_sessions tables.
     Auto-creates parent directories and seeds initial personas if empty.
+    Provides automatic fallback to /tmp or in-memory database in serverless/read-only sandboxes.
     """
     target_path = Path(db_path or DB_PATH)
-    os.makedirs(target_path.parent, exist_ok=True)
+    try:
+        os.makedirs(target_path.parent, exist_ok=True)
+        conn = sqlite3.connect(str(target_path))
+    except (OSError, sqlite3.OperationalError):
+        # Fallback for serverless read-only sandbox (e.g., Vercel / AWS Lambda)
+        try:
+            tmp_dir = Path("/tmp/data/db")
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(str(tmp_dir / "querycampus.db"))
+        except Exception:
+            conn = sqlite3.connect(":memory:")
 
-    conn = sqlite3.connect(str(target_path))
     conn.row_factory = sqlite3.Row
     with conn:
         conn.execute(
@@ -811,36 +828,42 @@ def authenticate_user(
         return user
 
     # 4. Check SQLite Identity Store
-    target_path = Path(db_path or DB_PATH)
-    conn = init_auth_db(target_path)
-    with conn:
-        cursor = conn.execute(
-            "SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(usn) = ?",
-            (cleaned_id, cleaned_id),
-        )
-        row = cursor.fetchone()
-        if row:
-            stored_hash = row["password_hash"] if "password_hash" in row.keys() else None
-            if not check_pw(password, stored_hash):
-                return None  # Password mismatch on SQLite!
-            conn.execute(
-                "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE usn = ?",
-                (row["usn"],),
+    try:
+        target_path = Path(db_path or DB_PATH)
+        conn = init_auth_db(target_path)
+        with conn:
+            cursor = conn.execute(
+                "SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(usn) = ?",
+                (cleaned_id, cleaned_id),
             )
-            role = RoleStr(row["role"].capitalize())
-            return User(
-                usn=row["usn"],
-                id_number=row["usn"],
-                name=row["name"],
-                email=row["email"],
-                department=row["department"],
-                semester=row["semester"],
-                role=role,
-                verified=int(row["verified"]),
-                last_login=str(row["last_login"]),
-                badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
-                avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
-            )
+            row = cursor.fetchone()
+            if row:
+                stored_hash = row["password_hash"] if "password_hash" in row.keys() else None
+                if not check_pw(password, stored_hash):
+                    return None  # Password mismatch on SQLite!
+                try:
+                    conn.execute(
+                        "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE usn = ?",
+                        (row["usn"],),
+                    )
+                except Exception:
+                    pass
+                role = RoleStr(row["role"].capitalize())
+                return User(
+                    usn=row["usn"],
+                    id_number=row["usn"],
+                    name=row["name"],
+                    email=row["email"],
+                    department=row["department"],
+                    semester=row["semester"],
+                    role=role,
+                    verified=int(row["verified"]),
+                    last_login=str(row["last_login"]),
+                    badge_label="Administrator" if role == Role.ADMIN else "Enrolled Student",
+                    avatar_emoji="🛡️" if role == Role.ADMIN else "🎓",
+                )
+    except Exception:
+        pass
 
     return None
 

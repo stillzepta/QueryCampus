@@ -125,3 +125,65 @@ def test_vercel_cors_preflight():
     status, headers, body = make_request("/api/chat", method="OPTIONS")
     assert "200 OK" in status
     assert headers.get("Access-Control-Allow-Origin") == "*"
+
+
+def test_vercel_auth_login_krishna_admin():
+    payload = {"identifier": "krishna@bst.edu.in", "password": "krishna123"}
+    status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+    assert "200 OK" in status
+    data = json.loads(body)
+    assert data["authenticated"] is True
+    assert data["user"]["role"] == "Admin"
+    assert data["user"]["email"] == "krishna@bst.edu.in"
+
+
+def test_vercel_auth_login_amanat_student():
+    payload = {"identifier": "amanat@bst.edu.in", "password": "amanat123"}
+    status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+    assert "200 OK" in status
+    data = json.loads(body)
+    assert data["authenticated"] is True
+    assert data["user"]["role"] == "Student"
+    assert data["user"]["email"] == "amanat@bst.edu.in"
+
+
+def test_vercel_auth_login_bare_username():
+    payload = {"identifier": "krishna", "password": "krishna123"}
+    status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+    assert "200 OK" in status
+    data = json.loads(body)
+    assert data["authenticated"] is True
+    assert data["user"]["email"] == "krishna@bst.edu.in"
+
+
+def test_vercel_auth_login_invalid_password():
+    payload = {"identifier": "krishna@bst.edu.in", "password": "wrongpassword"}
+    status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+    assert "401" in status
+    data = json.loads(body)
+    assert data["authenticated"] is False
+
+
+def test_vercel_auth_login_restricted_non_bst_domain():
+    payload = {"identifier": "user@gmail.com", "password": "anypassword"}
+    status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+    assert "403" in status
+    data = json.loads(body)
+    assert data["authenticated"] is False
+    assert "@bst.edu.in" in data["error"]
+
+
+def test_vercel_auth_fallback_mode_simulation():
+    import api.index as idx
+    prev = idx.HAS_AUTH_MODULE
+    try:
+        idx.HAS_AUTH_MODULE = False
+        payload = {"identifier": "amanat@bst.edu.in", "password": "amanat123"}
+        status, headers, body = make_request("/api/auth/login", method="POST", payload=payload)
+        assert "200 OK" in status
+        data = json.loads(body)
+        assert data["authenticated"] is True
+        assert data["user"]["role"] == "Student"
+        assert data["user"]["usn"] == "BST24CS001"
+    finally:
+        idx.HAS_AUTH_MODULE = prev
