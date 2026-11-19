@@ -1045,6 +1045,33 @@
         justify-content: center;
       }
     }
+
+    /* Kiosk Institutional Gate Modal */
+    .kiosk-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(33, 19, 61, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .kiosk-modal-card {
+      background: #FFFFFF;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--card-border);
+      box-shadow: var(--shadow-float);
+      max-width: 460px;
+      width: 100%;
+      padding: 30px 28px;
+      animation: zoomUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
   </style>
 </head>
 <body>
@@ -1071,9 +1098,13 @@
         <span class="ai-indicator-text">Aussie • AI Active</span>
       </div>
 
-      <div class="student-pill">
-        <span>🎓 Student: <strong>Serina Mehra</strong></span>
+      <div class="student-pill" id="kioskUserPill">
+        <span>🎓 Student: <strong id="kioskUserName">Amanat Singh</strong></span>
       </div>
+
+      <button class="btn-header" onclick="kioskSignOut()" id="kioskSignOutBtn" style="display:none; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5;">
+        🚪 Sign Out
+      </button>
 
       <button class="btn-header" onclick="openDirectoryModal()">
         🗺️ Campus Directory
@@ -1754,6 +1785,164 @@
         .replace(/\n\n/g, '<br><br>')
         .replace(/\n/g, '<br>');
     }
+
+    // -----------------------------------------------------------------
+    // INSTITUTIONAL KIOSK AUTHENTICATION & LOGIN GATE
+    // -----------------------------------------------------------------
+    function checkKioskAuth() {
+      const saved = sessionStorage.getItem("kiosk_user");
+      const modal = document.getElementById("kioskLoginModal");
+      const userPill = document.getElementById("kioskUserPill");
+      const signOutBtn = document.getElementById("kioskSignOutBtn");
+
+      if (!saved) {
+        if (modal) modal.style.display = "flex";
+        if (signOutBtn) signOutBtn.style.display = "none";
+      } else {
+        try {
+          const user = JSON.parse(saved);
+          if (modal) modal.style.display = "none";
+          if (userPill) {
+            const icon = (user.role && user.role.toLowerCase() === 'admin') ? '🛡️' : '🎓';
+            userPill.innerHTML = `<span>${icon} ${user.role || 'User'}: <strong>${escapeHtml(user.name || user.email)}</strong></span>`;
+          }
+          if (signOutBtn) signOutBtn.style.display = "inline-flex";
+        } catch (e) {
+          if (modal) modal.style.display = "flex";
+        }
+      }
+    }
+
+    function fillKioskDemo(email, pw) {
+      const emailField = document.getElementById("kioskEmail");
+      const pwField = document.getElementById("kioskPassword");
+      if (emailField) emailField.value = email;
+      if (pwField) pwField.value = pw;
+      const errBox = document.getElementById("kioskLoginError");
+      if (errBox) errBox.style.display = "none";
+    }
+
+    async function handleKioskLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("kioskEmail").value.trim().toLowerCase();
+      const pw = document.getElementById("kioskPassword").value;
+      const errBox = document.getElementById("kioskLoginError");
+      const btn = document.getElementById("kioskLoginBtn");
+
+      errBox.style.display = "none";
+
+      if (!email.endsWith("@bst.edu.in")) {
+        errBox.textContent = "❌ Access Restricted: Only @bst.edu.in domain emails are allowed. To create an account, please contact the campus front desk.";
+        errBox.style.display = "block";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Verifying with Supabase Cloud...";
+
+      try {
+        const resp = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: email, password: pw })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.authenticated && data.user) {
+          sessionStorage.setItem("kiosk_user", JSON.stringify(data.user));
+          checkKioskAuth();
+        } else {
+          errBox.textContent = data.error || "❌ Authentication failed: Invalid credentials.";
+          errBox.style.display = "block";
+        }
+      } catch (err) {
+        errBox.textContent = "❌ Connection error while contacting authentication server.";
+        errBox.style.display = "block";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "🔐 Sign In to Activate Kiosk";
+      }
+    }
+
+    function kioskSignOut() {
+      sessionStorage.removeItem("kiosk_user");
+      checkKioskAuth();
+    }
+
+    // Run auth check on document readiness
+    window.addEventListener("DOMContentLoaded", checkKioskAuth);
+    checkKioskAuth();
   </script>
+
+  <!-- ===============================================================
+       INSTITUTIONAL LOGIN MODAL OVERLAY
+       =============================================================== -->
+  <div id="kioskLoginModal" class="kiosk-modal-overlay" style="display:none;">
+    <div class="kiosk-modal-card">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <div style="font-size: 2.8rem; margin-bottom: 6px;">🎓</div>
+        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--c-deep-purple); margin-bottom: 4px;">
+          QueryCampus Kiosk Portal
+        </h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.4;">
+          Bosscoder College of Technology • Institutional Verification
+        </p>
+      </div>
+
+      <div style="background: rgba(104, 66, 194, 0.06); border: 1px solid var(--card-border); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.84rem; color: var(--c-deep-purple);">
+        🔒 <strong>Restricted Access:</strong> Only verified accounts with <code style="color: #6842C2; font-weight: 700;">@bst.edu.in</code> domain are authorized.
+      </div>
+
+      <form id="kioskLoginForm" onsubmit="handleKioskLogin(event)">
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px;">
+            Institutional Email Address
+          </label>
+          <input type="text" id="kioskEmail" placeholder="e.g. amanat@bst.edu.in or krishna@bst.edu.in" required
+                 style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; outline: none;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 5px;">
+            Account Password
+          </label>
+          <input type="password" id="kioskPassword" placeholder="Enter your password" required
+                 style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; outline: none;">
+        </div>
+
+        <div id="kioskLoginError" style="display: none; background: #FEE2E2; border: 1px solid #F87171; color: #991B1B; padding: 10px 14px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 14px; line-height: 1.4;"></div>
+
+        <button type="submit" id="kioskLoginBtn"
+                style="width: 100%; padding: 12px; background: var(--c-lime-green); color: var(--c-deep-purple); border: none; border-radius: 8px; font-weight: 800; font-size: 0.94rem; cursor: pointer; box-shadow: var(--lime-glow);">
+          🔐 Sign In to Activate Kiosk
+        </button>
+      </form>
+
+      <!-- Quick Demo Credentials -->
+      <div style="background: #F8FAFC; border: 1px dashed var(--card-border); border-radius: 8px; padding: 12px 14px; margin-top: 16px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+          ⚡ Live Demo Evaluation Accounts
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-dark); margin-bottom: 8px; line-height: 1.5;">
+          <div>🛡️ <strong>Admin:</strong> <code>krishna@bst.edu.in</code> &nbsp;|&nbsp; PW: <code>krishna123</code></div>
+          <div>🎓 <strong>Student:</strong> <code>amanat@bst.edu.in</code> &nbsp;|&nbsp; PW: <code>amanat123</code></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="fillKioskDemo('krishna@bst.edu.in', 'krishna123')"
+                  style="flex: 1; padding: 6px 8px; background: #FFFFFF; border: 1px solid var(--card-border); border-radius: 6px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+            Fill Admin
+          </button>
+          <button type="button" onclick="fillKioskDemo('amanat@bst.edu.in', 'amanat123')"
+                  style="flex: 1; padding: 6px 8px; background: #FFFFFF; border: 1px solid var(--card-border); border-radius: 6px; font-size: 0.76rem; font-weight: 700; cursor: pointer;">
+            Fill Student
+          </button>
+        </div>
+      </div>
+
+      <!-- Account Creation Notice -->
+      <div style="background: rgba(13, 148, 136, 0.08); border-left: 3px solid #0D9488; border-radius: 6px; padding: 10px 12px; margin-top: 14px; font-size: 0.78rem; color: #134E4A; line-height: 1.4;">
+        🏛️ <strong>Need an account?</strong> To create a new institutional account, please <strong>contact the campus Front Desk</strong> in person at Block A, Room 101 (Office of Academic Affairs).
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -481,6 +481,16 @@ def app(environ: Dict[str, Any], start_response: Any):
         identifier = payload.get("identifier", "").strip()
         password = payload.get("password")
 
+        # Restrict login to @bst.edu.in domain accounts
+        if "@" in identifier and not identifier.lower().endswith("@bst.edu.in"):
+            return send_json(
+                {
+                    "authenticated": False,
+                    "error": "Access Restricted: Only @bst.edu.in domain emails are allowed. To create an account, please contact the campus front desk.",
+                },
+                status="403 Forbidden",
+            )
+
         user = authenticate_user(identifier, password)
         if user:
             return send_json({"authenticated": True, "user": user.to_session_dict()})

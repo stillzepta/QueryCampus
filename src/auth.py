@@ -358,6 +358,16 @@ def is_valid_institutional_domain(email: str) -> bool:
     return False
 
 
+def is_bst_domain(email: str) -> bool:
+    """
+    Verifies that an email belongs strictly to the sanctioned @bst.edu.in institutional domain.
+    """
+    if not email or "@" not in email:
+        return False
+    parts = email.strip().lower().split("@")
+    return len(parts) == 2 and parts[1] == "bst.edu.in"
+
+
 # Functional alias for backend interface compatibility
 validate_institutional_email = is_valid_institutional_domain
 
