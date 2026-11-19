@@ -14,6 +14,12 @@ querycampus/
 │   └── workflows/
 │       └── ci.yml                 # Linting and automated build checks
 │
+├── api/
+│   └── index.py                   # Vercel Serverless Python entry point (WSGI app & handler)
+│
+├── main.py                        # Root Python entry point (WSGI app export)
+├── vercel.json                    # Vercel Serverless routing & rewrites configuration
+│
 ├── data/
 │   ├── sample_docs/               # Official PDF handbooks, exam guidelines, hostel rules
 │   └── db/                        # SQLite storage for tickets and user sessions
@@ -28,7 +34,9 @@ querycampus/
 │   └── ticketing.py               # Automated ticket generation for lost & found / admin escalations
 │
 ├── frontend/
-│   └── app.py                     # Streamlit UI (Auth sidebar, Chat interface, Citation cards, Admin Dashboard)
+│   ├── app.py                     # Streamlit Reception Lobby & Kiosk UI
+│   ├── reception_kiosk.html       # Standalone HTML5/CSS3 Walk-In Reception Kiosk
+│   └── server.py                  # Lightweight REST API & Kiosk Host (Starlette/Uvicorn)
 │
 ├── notebooks/
 │   └── rag_experiments.ipynb      # Prototyping chunk sizes and vector retrieval metrics
@@ -87,12 +95,25 @@ python src/ingest.py
 ```
 
 ### 4. Start the Application
+
+You can launch QueryCampus in either interface mode:
+
+#### Option A: Streamlit Reception UI (Recommended)
 ```bash
 streamlit run frontend/app.py
 ```
+*Features interactive reception lobby, animated Clara front desk, golden desk bell chime, citation cards, and admin dashboard.*
+
+#### Option B: Standalone Interactive Walk-In Kiosk
+```bash
+python frontend/server.py
+```
+*Runs on `http://localhost:8000` with fluid CSS walk-in animations, Web Audio synthesized service bell, browser voice synthesis (TTS), department quick trays, and escalation modals. You can also open `frontend/reception_kiosk.html` directly in any web browser!*
 
 ### 5. Run Unit Tests
 ```bash
+python tests/run_tests.py
+# or if pytest is installed:
 pytest tests/ -v
 ```
 
@@ -102,7 +123,7 @@ pytest tests/ -v
 
 | Role | Email | Password | Access Level |
 | :--- | :--- | :--- | :--- |
-| **Student** | `student@pesu.pes.edu` | `password123` | Concierge Chat, Citations, Ticket Submission |
+| **Student** (Serina Mehra) | `serina.mehra@bosscoder.edu` | `password123` | Concierge Chat, Citations, Ticket Submission |
 | **Administrator** | `admin@pesu.pes.edu` | `adminpassword` | Admin Ticket Dashboard, KB Re-indexing, Full Access |
 
 ---
@@ -113,3 +134,23 @@ pytest tests/ -v
 docker compose up --build
 ```
 The application will be live at `http://localhost:8501`.
+
+---
+
+## ▲ Vercel Serverless Deployment
+
+QueryCampus includes native Vercel Python Serverless deployment support:
+- **Serverless Entrypoint:** [api/index.py](file:///Users/zuri/Hackathons/QueryCampus/api/index.py) (exposes standard WSGI `app` and HTTP `handler`).
+- **Configuration:** [vercel.json](file:///Users/zuri/Hackathons/QueryCampus/vercel.json) routes incoming requests directly to the serverless entry point.
+- **Root Entrypoint:** [main.py](file:///Users/zuri/Hackathons/QueryCampus/main.py) provides zero-config compatibility for PaaS hosts.
+
+Deploy with the Vercel CLI or via GitHub:
+```bash
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+When deployed, Vercel serves the responsive Daylight Academic Slate & Emerald web concierge at `/` and all REST API routes at `/api/*`.
+

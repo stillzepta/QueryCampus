@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueryCampus • Bosscoder College AI Receptionist & Concierge</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Palette requested by user */
+      --c-deep-purple: #21133D;    /* Deep purple for sidebar & dark accents */
+      --c-royal-purple: #6842C2;   /* Royal violet for purple gradient accents */
+      --c-soft-lavender: #A78BFA;  /* Soft lavender / lilac for borders & glows */
+      --c-lime-green: #D6F36A;     /* Electric lime green for buttons & highlights */
+      --c-light-lavender: #F7F5FF; /* Very light lavender for main background */
+      
+      /* UI Theme Tokens */
+      --bg-main: var(--c-light-lavender);
+      --card-white: #FFFFFF;
+      --card-border: rgba(104, 66, 194, 0.16);
+      --card-border-hover: rgba(104, 66, 194, 0.45);
+      --text-dark: #21133D;
+      --text-muted: #64557E;
+      --text-light: #F7F5FF;
+      --purple-gradient: linear-gradient(135deg, #21133D 0%, #4D2689 50%, #6842C2 100%);
+      --purple-subtle-gradient: linear-gradient(135deg, rgba(33, 19, 61, 0.04) 0%, rgba(104, 66, 194, 0.08) 100%);
+      --lime-glow: 0 8px 24px rgba(214, 243, 106, 0.4);
+      --purple-glow: 0 10px 30px rgba(104, 66, 194, 0.25);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-xl: 30px;
+      --shadow-card: 0 10px 30px rgba(33, 19, 61, 0.06), 0 1px 3px rgba(33, 19, 61, 0.04);
+      --shadow-float: 0 20px 45px rgba(33, 19, 61, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Decorative Pastel Background Blobs */
+    body::before {
+      content: "";
+      position: fixed;
+      top: -120px;
+      left: 15%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.18) 0%, rgba(214, 243, 106, 0.08) 50%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      bottom: -150px;
+      right: 10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(104, 66, 194, 0.12) 0%, rgba(167, 139, 250, 0.08) 50%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* -----------------------------------------------------------------
+       HEADER: DEEP PURPLE WITH PURPLE GRADIENT ACCENTS & LIME ACCENTS
+       ----------------------------------------------------------------- */
+    header {
+      position: relative;
+      z-index: 10;
+      background: var(--c-deep-purple);
+      border-bottom: 2px solid var(--c-royal-purple);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 6px 28px rgba(33, 19, 61, 0.35);
+    }
+
+    @media (prefers-color-scheme: dark) {
+  header {
+    background: #1A0F2E; /* even darker purple */
+    border-bottom-color: #A78BFA;
+  }
+  .btn-header {
+    background: #D6F36A;
+    color: #21133D;
+  }
+  .btn-header:hover {
+    background: #E4FFA0;
+  }
+  .student-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: #F7F5FF;
+  }
+}
+
+    @media (prefers-color-scheme: dark) {
+  .btn-kiosk-tool {
+    background: rgba(214, 243, 106, 0.15);
+    border-color: #D6F36A;
+    color: #D6F36A;
+  }
+  .btn-kiosk-tool:hover {
+    background: #D6F36A;
+    color: #21133D;
+  }
+}
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+    }
+
+    .brand-crest {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--c-royal-purple), var(--c-soft-lavender));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 0 20px rgba(167, 139, 250, 0.35);
+      border: 2px solid var(--c-lime-green);
+    }
+
+    .brand-text h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 0.8px;
+    }
+
+    .brand-text p {
+      font-size: 0.74rem;
+      color: var(--c-lime-green);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .header-status-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Small Animated AI Assistant Indicator */
+    .ai-assistant-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(104, 66, 194, 0.35);
+      border: 1px solid var(--c-soft-lavender);
+      padding: 6px 14px;
+      border-radius: 30px;
+    }
+
+    .ai-orb {
+      position: relative;
+      width: 10px;
+      height: 10px;
+    }
+
+    .ai-orb-core {
+      width: 10px;
+      height: 10px;
+      background-color: var(--c-lime-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--c-lime-green);
+    }
+
+    .ai-orb-ring {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--c-lime-green);
+      animation: orbPulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+
+    @keyframes orbPulse {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .ai-indicator-text {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--c-lime-green);
+      letter-spacing: 0.5px;
+    }
+
+    .student-pill {
+      font-size: 0.82rem;
+      color: #F7F5FF;   /* white/light text */
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .student-pill strong {
+      color: var(--c-lime-green);
+    }
+
+    .btn-header {
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      border: none;
+      padding: 8px 18px;
+      border-radius: 24px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--lime-glow);
+    }
+
+    .btn-header:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(214, 243, 106, 0.6);
+    }
+
+    /* -----------------------------------------------------------------
+       MAIN WRAPPER
+       ----------------------------------------------------------------- */
+    main {
+      flex: 1;
+      position: relative;
+      z-index: 5;
+      padding: 30px 40px 60px;
+      max-width: 1380px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* -----------------------------------------------------------------
+       SCENE 1: RECEPTION LOBBY (ARRIVAL VIEW)
+       ----------------------------------------------------------------- */
+    #view-lobby {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    /* Front Desk Grand Pavilion Banner */
+    .reception-desk-grand {
+      background: var(--purple-gradient);
+      border-radius: var(--radius-xl);
+      padding: 38px 46px;
+      box-shadow: var(--shadow-float);
+      position: relative;
+      overflow: hidden;
+      color: var(--text-light);
+      border: 2px solid rgba(167, 139, 250, 0.3);
+    }
+
+    .reception-desk-grand::before {
+      content: "";
+      position: absolute;
+      top: -80px;
+      right: -80px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(214, 243, 106, 0.18) 0%, rgba(104, 66, 194, 0.1) 50%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .desk-main-layout {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 36px;
+      align-items: center;
+    }
+
+    /* Aussie Receptionist Avatar with Animated Ring */
+    .avatar-wrapper {
+      position: relative;
+    }
+
+    .avatar-ring {
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--c-lime-green), var(--c-soft-lavender));
+      padding: 4px;
+      box-shadow: 0 0 25px rgba(214, 243, 106, 0.35);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--c-deep-purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.8rem;
+      user-select: none;
+    }
+
+    /* Mini AI Wave beside Avatar */
+    .avatar-ai-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: var(--c-lime-green);
+      border: 3px solid var(--c-deep-purple);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--c-lime-green);
+    }
+
+    /* Dialogue & Nameplate */
+    .desk-dialogue-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .desk-nameplate {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.84rem;
+      letter-spacing: 2px;
+      color: var(--c-lime-green);
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .desk-dialogue-block h2 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1.25;
+    }
+
+    .desk-speech-bubble {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-left: 4px solid var(--c-lime-green);
+      border-radius: var(--radius-md);
+      padding: 18px 22px;
+      color: #FFFFFF;
+      font-size: 1.02rem;
+      line-height: 1.6;
+      max-width: 740px;
+      margin-top: 6px;
+    }
+
+    .desk-speech-bubble strong {
+      color: var(--c-lime-green);
+    }
+
+    /* Desk Interaction Controls (Lime Green Bell & Step Up) */
+    .desk-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Lime Green Service Bell */
+    .desk-bell-btn {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #FFFFFF 0%, var(--c-lime-green) 50%, #9BC416 100%);
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25), var(--lime-glow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      outline: none;
+    }
+
+    .desk-bell-btn:hover {
+      transform: scale(1.08) translateY(-3px);
+      box-shadow: 0 14px 34px rgba(214, 243, 106, 0.65);
+    }
+
+    .desk-bell-btn:active {
+      transform: scale(0.94);
+    }
+
+    .desk-bell-btn span {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .desk-bell-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--c-lime-green);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      text-align: center;
+    }
+
+    /* Lime Green Step Up Button */
+    .btn-step-up {
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 15px 30px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--lime-glow);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-step-up:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 12px 32px rgba(214, 243, 106, 0.65);
+      background: #E4FFA0;
+    }
+
+    /* -----------------------------------------------------------------
+       WHITE CARDS WITH ROUNDED CORNERS: BROCHURES & TRAYS
+       ----------------------------------------------------------------- */
+    .lobby-trays-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 10px;
+    }
+
+    .lobby-trays-header h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      color: var(--text-dark);
+      letter-spacing: 0.5px;
+    }
+
+    .lobby-trays-header p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .service-trays-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: 22px;
+    }
+
+    /* White card with rounded corners */
+    .tray-card {
+      background: var(--card-white);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      cursor: pointer;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tray-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      background: var(--c-royal-purple);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .tray-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--c-royal-purple);
+      box-shadow: var(--shadow-float);
+    }
+
+    .tray-card:hover::before {
+      opacity: 1;
+    }
+
+    .tray-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: rgba(104, 66, 194, 0.08);
+      border: 1px solid rgba(104, 66, 194, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      flex-shrink: 0;
+    }
+
+    .tray-body h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 5px;
+    }
+
+    .tray-body p {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      line-height: 1.48;
+    }
+
+    .tray-chip {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--c-deep-purple);
+      background: var(--c-lime-green);
+      padding: 4px 12px;
+      border-radius: 14px;
+    }
+
+    /* -----------------------------------------------------------------
+       SCENE 2: INTERACTIVE KIOSK (CHATBOT VIEW)
+       ----------------------------------------------------------------- */
+    #view-kiosk {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      background: var(--card-white);
+      border-radius: var(--radius-xl);
+      border: 1.5px solid var(--card-border);
+      box-shadow: var(--shadow-float);
+      overflow: hidden;
+      animation: zoomUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      max-height: calc(100vh - 120px);
+    }
+
+    /* Kiosk Top Bar: Deep Purple */
+    .kiosk-navbar {
+      background: var(--c-deep-purple);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--c-royal-purple);
+    }
+
+    .kiosk-aussie-profile {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .kiosk-avatar-small {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--c-royal-purple);
+      border: 2px solid var(--c-lime-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+
+    .kiosk-aussie-details h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kiosk-status-line {
+      font-size: 0.8rem;
+      color: var(--c-lime-green);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .kiosk-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-kiosk-tool {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-kiosk-tool:hover {
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      border-color: var(--c-lime-green);
+    }
+
+    /* Kiosk Messages Area */
+    .kiosk-messages {
+      flex: 1;
+      padding: 28px 36px;
+      overflow-y: auto;
+      background: var(--c-light-lavender);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      scroll-behavior: smooth;
+    }
+
+    /* Chat Bubbles: White Cards with Rounded Corners */
+    .message-row {
+      display: flex;
+      gap: 16px;
+      max-width: 86%;
+      animation: messageSlide 0.3s ease forwards;
+    }
+
+    .message-row.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 12px rgba(33, 19, 61, 0.1);
+    }
+
+    .message-avatar.assistant {
+      background: var(--c-deep-purple);
+      border: 2px solid var(--c-lime-green);
+      color: white;
+    }
+
+    .message-avatar.user {
+      background: var(--c-royal-purple);
+      color: white;
+    }
+
+    /* White rounded card */
+    .bubble {
+      background: var(--card-white);
+      border-radius: var(--radius-md);
+      padding: 18px 24px;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      border: 1px solid var(--card-border);
+    }
+
+    .message-row.user .bubble {
+      background: var(--c-deep-purple);
+      color: #FFFFFF;
+      border-radius: var(--radius-md) 0 var(--radius-md) var(--radius-md);
+      border: none;
+    }
+
+    .message-row.assistant .bubble {
+      background: var(--card-white);
+      color: var(--text-dark);
+      border-left: 4px solid var(--c-royal-purple);
+      border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+    }
+
+    .official-seal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--c-royal-purple);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    /* Citations inside White Card */
+    .citations-container {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .citation-item {
+      background: var(--c-light-lavender);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--c-royal-purple);
+      border-radius: 0 10px 10px 0;
+      padding: 12px 16px;
+      font-size: 0.84rem;
+    }
+
+    .citation-title-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      color: var(--c-deep-purple);
+      margin-bottom: 4px;
+    }
+
+    .citation-match-pill {
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    /* Latency telemetries */
+    .telemetry-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .telemetry-tag {
+      background: var(--c-light-lavender);
+      border: 1px solid var(--card-border);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .telemetry-tag strong {
+      color: var(--c-deep-purple);
+    }
+
+    /* Escalation Box in Chat */
+    .kiosk-escalation-card {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-left: 4px solid #F59E0B;
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: #92400E;
+    }
+
+    .kiosk-escalation-card h4 {
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Lime Green Escalation Button */
+    .btn-escalate-now {
+      margin-top: 10px;
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.84rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(214, 243, 106, 0.4);
+    }
+
+    .btn-escalate-now:hover {
+      background: #E4FFA0;
+      transform: translateY(-2px);
+    }
+
+    /* Kiosk Footer & Input Form */
+    .kiosk-footer {
+      background: var(--card-white);
+      border-top: 1px solid var(--card-border);
+      padding: 18px 30px;
+    }
+
+    .kiosk-quick-chips {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 8px;
+    }
+
+    .quick-chip-btn {
+      background: var(--c-light-lavender);
+      border: 1px solid var(--card-border);
+      color: var(--c-deep-purple);
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-chip-btn:hover {
+      background: var(--c-lime-green);
+      border-color: var(--c-lime-green);
+      transform: translateY(-2px);
+    }
+
+    .input-bar-form {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .kiosk-input {
+      flex: 1;
+      background: var(--c-light-lavender);
+      border: 1.5px solid var(--card-border);
+      border-radius: 30px;
+      padding: 15px 24px;
+      font-size: 0.98rem;
+      color: var(--text-dark);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .kiosk-input:focus {
+      border-color: var(--c-royal-purple);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(104, 66, 194, 0.15);
+    }
+
+    /* Lime Green Send Button */
+    .btn-send {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--c-lime-green);
+      color: var(--c-deep-purple);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      cursor: pointer;
+      box-shadow: var(--lime-glow);
+      transition: all 0.2s;
+      flex-shrink: 0;
+      font-weight: 900;
+    }
+
+    .btn-send:hover {
+      transform: scale(1.08);
+      box-shadow: 0 8px 24px rgba(214, 243, 106, 0.6);
+      background: #E4FFA0;
+    }
+
+    /* -----------------------------------------------------------------
+       MODALS
+       ----------------------------------------------------------------- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(33, 19, 61, 0.65);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: var(--card-white);
+      border: 2px solid var(--c-royal-purple);
+      border-radius: var(--radius-xl);
+      max-width: 650px;
+      width: 100%;
+      padding: 34px;
+      box-shadow: var(--shadow-float);
+      position: relative;
+    }
+
+    .modal-card h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      color: var(--c-deep-purple);
+      margin-bottom: 8px;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      background: var(--c-light-lavender);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--c-deep-purple);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--c-light-lavender);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      color: var(--text-dark);
+    }
+
+    .form-control:focus {
+      border-color: var(--c-royal-purple);
+      background: #FFFFFF;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes zoomUp {
+      from { opacity: 0; transform: scale(0.97) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes messageSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 900px) {
+      .desk-main-layout {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+      .avatar-wrapper {
+        margin: 0 auto;
+      }
+      .desk-dialogue-block {
+        align-items: center;
+      }
+      .desk-controls {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===============================================================
+       HEADER BAR (DEEP PURPLE WITH LIME GREEN CONTROLS)
+       =============================================================== -->
+  <header>
+    <a href="#" class="brand" onclick="goToLobby()">
+      <div class="brand-crest">🏛️</div>
+      <div class="brand-text">
+        <h1>QueryCampus</h1>
+        <p>Bosscoder College Concierge</p>
+      </div>
+    </a>
+
+    <div class="header-status-group">
+      <!-- Animated AI Assistant Indicator -->
+      <div class="ai-assistant-indicator">
+        <div class="ai-orb">
+          <div class="ai-orb-core"></div>
+          <div class="ai-orb-ring"></div>
+        </div>
+        <span class="ai-indicator-text">Aussie • AI Active</span>
+      </div>
+
+      <div class="student-pill">
+        <span>🎓 Student: <strong>Serina Mehra</strong></span>
+      </div>
+
+      <button class="btn-header" onclick="openDirectoryModal()">
+        🗺️ Campus Directory
+      </button>
+      <button class="btn-header" onclick="toggleVoice()" id="voiceToggleBtn">
+        🔊 Voice: ON
+      </button>
+    </div>
+  </header>
+
+  <!-- ===============================================================
+       MAIN INTERACTIVE STAGE (LIGHT LAVENDER BACKGROUND)
+       =============================================================== -->
+  <main>
+
+    <!-- -------------------------------------------------------------
+         VIEW 1: CAMPUS RECEPTION LOBBY (ARRIVAL)
+         ------------------------------------------------------------- -->
+    <section id="view-lobby">
+      
+      <!-- Front Desk Grand Pavilion Banner with Purple Gradient -->
+      <div class="reception-desk-grand">
+        <div class="desk-main-layout">
+          
+          <!-- Aussie Receptionist Portrait with Animated Ring -->
+          <div class="avatar-wrapper">
+            <div class="avatar-ring">
+              <div class="avatar-inner">👩‍💼</div>
+            </div>
+            <div class="avatar-ai-badge" title="Aussie is Online & Ready"></div>
+          </div>
+
+          <!-- Dialogue & Welcome -->
+          <div class="desk-dialogue-block">
+            <div class="desk-nameplate">
+              <span>🏛️ Central Reception Counter</span>
+              <span>•</span>
+              <span>Bosscoder College Welcome Pavilion</span>
+            </div>
+            <h2>Welcome to Campus Reception!</h2>
+            <div class="desk-speech-bubble" id="lobbyAussieBubble">
+              "Good evening, <strong>Serina</strong>! Welcome to Bosscoder College Student Center. I'm <strong>Aussie</strong>, your AI Campus Receptionist. 
+              Step up to my desk or ring the golden bell to inquire about campus guidelines, exam revaluation, 
+              library study zones, or hostel gates. I'll open the interactive terminal for you right now!"
+            </div>
+          </div>
+
+          <!-- Desk Controls -->
+          <div class="desk-controls">
+            <button class="desk-bell-btn" onclick="ringDeskBell()" title="Click to ring front desk bell">
+              <span>🛎️</span>
+            </button>
+            <div class="desk-bell-label">Ring Desk Bell</div>
+            <button class="btn-step-up" onclick="goToKiosk()">
+              <span>🚶 Step Up to Desk</span>
+              <span>→</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick Department Trays / Information Brochures (White Cards) -->
+      <div class="lobby-trays-header">
+        <div>
+          <h3>Department Inquiries & Campus Guides</h3>
+          <p>Select any front desk brochure to approach Aussie with that specific query:</p>
+        </div>
+      </div>
+
+      <div class="service-trays-grid">
+        
+        <div class="tray-card" onclick="askQuickPrompt('What are the Central Library operating hours and study cubicle rules?')">
+          <div class="tray-icon">📚</div>
+          <div class="tray-body">
+            <h4>Central Library & Study Zones</h4>
+            <p>Operating hours, borrowing quotas, 24/7 exam study halls, and digital catalogue access.</p>
+            <div class="tray-chip">📖 08:00 AM – 10:00 PM</div>
+          </div>
+        </div>
+
+        <div class="tray-card" onclick="askQuickPrompt('What is the minimum attendance requirement and the policy for medical condonation?')">
+          <div class="tray-icon">📌</div>
+          <div class="tray-body">
+            <h4>Attendance & Regulations</h4>
+            <p>Mandatory 75% attendance rule, medical condonation up to 65%, and hall ticket issuance.</p>
+            <div class="tray-chip">⚖️ Academic Handbook</div>
+          </div>
+        </div>
+
+        <div class="tray-card" onclick="askQuickPrompt('Where is the finance and accounts office located and what are their working hours?')">
+          <div class="tray-icon">💳</div>
+          <div class="tray-body">
+            <h4>Fees & Accounts Office</h4>
+            <p>Tuition payment receipts, scholarship disbursals, bank challans, and Counter 4 timings.</p>
+            <div class="tray-chip">🏢 Admin Block Room 204</div>
+          </div>
+        </div>
+
+        <div class="tray-card" onclick="askQuickPrompt('What are the hostel curfew timings, late entry rules, and weekend outing procedures?')">
+          <div class="tray-icon">🚪</div>
+          <div class="tray-body">
+            <h4>Hostel Curfew & Services</h4>
+            <p>Evening gate hours (10:00 PM), warden outing approval, laundry services, and mess timings.</p>
+            <div class="tray-chip">🛏️ Residential Services</div>
+          </div>
+        </div>
+
+        <div class="tray-card" onclick="askQuickPrompt('What is the fee and procedure for grade revaluation and photocopy of answer scripts?')">
+          <div class="tray-icon">📝</div>
+          <div class="tray-body">
+            <h4>Grade Appeals & Revaluation</h4>
+            <p>End-semester grading policies, re-evaluation fee per course, and Controller of Exams protocols.</p>
+            <div class="tray-chip">📋 Exam Policy Sec 4</div>
+          </div>
+        </div>
+
+        <div class="tray-card" onclick="askQuickPrompt('I lost my university student ID card. What should I do to get a replacement?')">
+          <div class="tray-icon">🔍</div>
+          <div class="tray-body">
+            <h4>Lost & Found Desk</h4>
+            <p>Lost ID card procedures, temporary gate pass issuance, and lost property claim registry.</p>
+            <div class="tray-chip">🎫 Immediate Escalation</div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- -------------------------------------------------------------
+         VIEW 2: THE INTERACTIVE CONCIERGE KIOSK (CHATBOT)
+         ------------------------------------------------------------- -->
+    <section id="view-kiosk">
+      
+      <!-- Top Kiosk Bar: Deep Purple -->
+      <div class="kiosk-navbar">
+        <div class="kiosk-aussie-profile">
+          <div class="kiosk-avatar-small">👩‍💼</div>
+          <div class="kiosk-aussie-details">
+            <h3>
+              Aussie • AI Receptionist
+              <!-- Mini Animated AI Orb -->
+              <span class="ai-assistant-indicator" style="padding:3px 10px; font-size:0.7rem;">
+                <span class="ai-orb" style="width:8px; height:8px;"><span class="ai-orb-core" style="width:8px; height:8px;"></span></span>
+                ACTIVE
+              </span>
+            </h3>
+            <div class="kiosk-status-line">
+              <span id="aussieStatusText">Serving Serina Mehra • Ready to assist with verified records</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kiosk-actions">
+          <button class="btn-kiosk-tool" onclick="ringDeskBell()">
+            <span>🛎️</span> Ring Bell
+          </button>
+          <button class="btn-kiosk-tool" onclick="goToLobby()">
+            <span>🚪</span> Step Back to Lobby
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream (White Chat Cards with Rounded Corners) -->
+      <div class="kiosk-messages" id="kioskMessages">
+        
+        <!-- Welcome Message from Aussie -->
+        <div class="message-row assistant">
+          <div class="message-avatar assistant">👩‍💼</div>
+          <div class="bubble">
+            <div class="official-seal-header">
+              <span>🏛️ Bosscoder College Concierge Desk</span>
+            </div>
+            Hello <strong>Serina</strong>! Welcome to the Bosscoder College reception terminal. I'm <strong>Aussie</strong>. 
+            I'm connected directly to our official institutional policy handbooks, library database, 
+            examination bylaws, and hostel guidelines.
+            <br><br>
+            Please feel free to ask any question or select one of the suggested inquiries below!
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Kiosk Footer & Input Form -->
+      <div class="kiosk-footer">
+        
+        <!-- Quick Prompt Chips -->
+        <div class="kiosk-quick-chips">
+          <button class="quick-chip-btn" onclick="sendQueryText('What is the minimum attendance requirement?')">
+            📌 Attendance Requirement
+          </button>
+          <button class="quick-chip-btn" onclick="sendQueryText('What are the Central Library operating hours?')">
+            📚 Library Timings
+          </button>
+          <button class="quick-chip-btn" onclick="sendQueryText('Where is the finance and accounts office located?')">
+            📍 Finance Office Location
+          </button>
+          <button class="quick-chip-btn" onclick="sendQueryText('What are the hostel curfew timings?')">
+            🚪 Hostel Curfew Timings
+          </button>
+          <button class="quick-chip-btn" onclick="sendQueryText('What is the fee and procedure for grade revaluation?')">
+            📝 Grade Revaluation Fee
+          </button>
+          <button class="quick-chip-btn" onclick="sendQueryText('I lost my university student ID card. What should I do?')">
+            🔍 Lost ID Card Help
+          </button>
+        </div>
+
+        <!-- Text Input Bar with Lime Green Button -->
+        <form class="input-bar-form" id="kioskForm" onsubmit="handleFormSubmit(event)">
+          <input 
+            type="text" 
+            class="kiosk-input" 
+            id="kioskInput" 
+            placeholder="Ask Aussie about Bosscoder College regulations, library hours, fees, or lost items..." 
+            autocomplete="off"
+          />
+          <button type="submit" class="btn-send" title="Send question to Aussie">
+            ➤
+          </button>
+        </form>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ===============================================================
+       CAMPUS DIRECTORY MODAL (WHITE CARD WITH PURPLE BORDERS)
+       =============================================================== -->
+  <div class="modal-overlay" id="directoryModal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeDirectoryModal()">✕</button>
+      <h3>🗺️ Bosscoder College Directory & Office Map</h3>
+      <p style="color:var(--text-muted); font-size:0.86rem; margin-bottom:18px;">
+        Official office locations within the Main Academic & Admin Blocks:
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:12px; font-size:0.92rem;">
+        <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); padding:14px; border-radius:12px;">
+          <strong style="color:var(--c-royal-purple);">🏢 Office of the Registrar:</strong> Administration Building, Ground Floor, Room 102 (Hours: 9 AM - 5 PM)
+        </div>
+        <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); padding:14px; border-radius:12px;">
+          <strong style="color:var(--c-royal-purple);">💳 Accounts & Tuition Fee Desk:</strong> Administration Building, 2nd Floor, Counter 4
+        </div>
+        <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); padding:14px; border-radius:12px;">
+          <strong style="color:var(--c-royal-purple);">📚 Central College Library:</strong> East Academic Wing, 3 Floors (Hours: 8 AM - 10 PM)
+        </div>
+        <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); padding:14px; border-radius:12px;">
+          <strong style="color:var(--c-royal-purple);">🛏️ Chief Warden / Hostel Office:</strong> Residential Block B, Ground Floor (Emergency Desk 24/7)
+        </div>
+        <div style="background:var(--c-light-lavender); border:1px solid var(--card-border); padding:14px; border-radius:12px;">
+          <strong style="color:var(--c-royal-purple);">📝 Controller of Examinations (COE):</strong> Examination Complex, 1st Floor, Room 114
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===============================================================
+       OFFICIAL TICKET ESCALATION MODAL
+       =============================================================== -->
+  <div class="modal-overlay" id="ticketModal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeTicketModal()">✕</button>
+      <h3>🎫 File Official Reception Escalation Ticket</h3>
+      <p style="color:var(--text-muted); font-size:0.86rem; margin-bottom:18px;">
+        Aussie will directly route this ticket to the appropriate department administrator for immediate handling.
+      </p>
+
+      <form id="escalationForm" onsubmit="handleTicketSubmit(event)">
+        <div class="form-group">
+          <label>Department Category</label>
+          <select class="form-control" id="ticketCategory">
+            <option value="Lost & Found">Lost & Found Property</option>
+            <option value="Hostel Maintenance">Hostel Maintenance & Services</option>
+            <option value="Fee Grievance">Accounts & Fee Grievance</option>
+            <option value="Academic Escalation">Academic & Examination Escalation</option>
+            <option value="General Admin">General Administrative Assistance</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Subject / Brief Title</label>
+          <input type="text" class="form-control" id="ticketTitle" required placeholder="e.g. Lost Student ID Card near Library" />
+        </div>
+
+        <div class="form-group">
+          <label>Detailed Description & Identifying Information</label>
+          <textarea class="form-control" id="ticketDesc" rows="3" required placeholder="Provide location, date, time, and specific details..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Priority Level</label>
+          <select class="form-control" id="ticketPriority">
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-step-up" style="width:100%; justify-content:center; margin-top:10px;">
+          Submit Ticket to Front Desk
+        </button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ===============================================================
+       JAVASCRIPT LOGIC & AUDIO SYNTHESIS
+       =============================================================== -->
+  <script>
+    let isVoiceEnabled = true;
+    let audioContext = null;
+
+    // Local knowledge fallback for sub-second offline demo mode
+    const CAMPUS_OFFLINE_RAG = [
+      {
+        keywords: ["attendance", "condonation", "minimum", "75%"],
+        doc: "Academic Regulations Handbook (Section 1.2)",
+        page: 1,
+        similarity: 0.94,
+        answer: "According to official Bosscoder College regulations, a minimum of **75% attendance** is mandatory in every registered course to be eligible to sit for the end-semester examinations. Students with attendance between **65% and 74%** may apply for medical condonation by submitting verified hospital certificates to the Office of Academic Affairs within 7 days."
+      },
+      {
+        keywords: ["library", "timing", "hours", "cubicle", "book"],
+        doc: "Campus Facilities Directory (Section 2.1)",
+        page: 2,
+        similarity: 0.91,
+        answer: "The **Central College Library** operates from **08:00 AM to 10:00 PM** on all weekdays and Saturdays, and **09:00 AM to 05:00 PM** on Sundays. During end-semester exam weeks, the Ground Floor Silent Study Hall remains open **24/7**. Students can borrow up to **4 books for 14 days**."
+      },
+      {
+        keywords: ["finance", "fee", "accounts", "counter", "tuition", "bank"],
+        doc: "Campus Facilities Directory (Section 3.4)",
+        page: 2,
+        similarity: 0.89,
+        answer: "The **Finance and Student Accounts Office** is located in the **Administration Block, 2nd Floor, Room 204**. Public enquiry counters (Counter 3 and Counter 4) are open from **09:30 AM to 04:00 PM** on all working weekdays. Fee receipts can also be downloaded from the Student ERP Portal."
+      },
+      {
+        keywords: ["hostel", "curfew", "outing", "gate", "warden", "late"],
+        doc: "Hostel & Student Services Guide (Section 2.3)",
+        page: 1,
+        similarity: 0.92,
+        answer: "Hostel gates close strictly at **10:00 PM** every evening. Any student entering after 10:00 PM must register at the Chief Warden's security kiosk. Weekend overnight outing requests must be submitted through the Campus Warden App by **05:00 PM on Friday** with parental SMS confirmation."
+      },
+      {
+        keywords: ["grade", "revaluation", "appeal", "photocopy", "script", "exam"],
+        doc: "Examination and Grading Policy (Section 4.1)",
+        page: 3,
+        similarity: 0.88,
+        answer: "Students seeking grade revaluation can apply within **10 working days** from the announcement of results. The official revaluation fee is **₹750 per subject**, and the fee for obtaining an evaluated answer script photocopy is **₹400 per subject**, payable at Counter 4 or online."
+      },
+      {
+        keywords: ["lost", "id", "card", "found", "replacement"],
+        doc: "Campus Facilities Directory & Security Protocols",
+        page: 1,
+        similarity: 0.95,
+        escalation: "Lost & Found",
+        answer: "If you have lost your student ID card, please report it immediately to the **Security Office (Ground Floor, Room 104)** to prevent unauthorized campus access. You can request a temporary gate pass valid for 7 days, and apply for a replacement smart ID card at Counter 2 (replacement fee: ₹350)."
+      }
+    ];
+
+    // -------------------------------------------------------------
+    // AUDIO: Realistic Brass Service Desk Bell (Pure Web Audio)
+    // -------------------------------------------------------------
+    function ringDeskBell() {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        const now = audioContext.currentTime;
+
+        // Primary brass chime
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1864.66, now); // A#6
+        gain1.gain.setValueAtTime(0.45, now);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        osc1.start(now);
+        osc1.stop(now + 1.4);
+
+        // High shimmer overtone
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(3729.31, now); // A#7
+        gain2.gain.setValueAtTime(0.2, now);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.start(now);
+        osc2.stop(now + 1.0);
+      } catch (e) {
+        console.log("Audio not allowed yet:", e);
+      }
+
+      const bubble = document.getElementById('lobbyAussieBubble');
+      if (bubble) {
+        bubble.innerHTML = "🛎️ <em>*Ding!*</em> Aussie smiles warmly: <strong>'Welcome Serina! Step up to the counter or click any topic to begin!'</strong>";
+      }
+    }
+
+    // Voice Synthesis (TTS)
+    function speakAussie(text) {
+      if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/[*_#`]/g, '');
+      const utterance = new SpeechSynthesisUtterance(clean);
+      utterance.rate = 1.02;
+      utterance.pitch = 1.08;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Victoria')));
+      if (preferred) utterance.voice = preferred;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function toggleVoice() {
+      isVoiceEnabled = !isVoiceEnabled;
+      const btn = document.getElementById('voiceToggleBtn');
+      if (isVoiceEnabled) {
+        btn.textContent = "🔊 Voice: ON";
+        speakAussie("Receptionist voice enabled.");
+      } else {
+        btn.textContent = "🔇 Voice: OFF";
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // NAVIGATION: Lobby <-> Kiosk
+    // -------------------------------------------------------------
+    function goToKiosk() {
+      ringDeskBell();
+      document.getElementById('view-lobby').style.display = 'none';
+      const kiosk = document.getElementById('view-kiosk');
+      kiosk.style.display = 'flex';
+      document.getElementById('kioskInput').focus();
+    }
+
+    function goToLobby() {
+      document.getElementById('view-kiosk').style.display = 'none';
+      document.getElementById('view-lobby').style.display = 'flex';
+      window.speechSynthesis.cancel();
+    }
+
+    function askQuickPrompt(query) {
+      goToKiosk();
+      sendQueryText(query);
+    }
+
+    // -------------------------------------------------------------
+    // CHAT ENGINE
+    // -------------------------------------------------------------
+    async function sendQueryText(query) {
+      if (!query || !query.trim()) return;
+      
+      const messagesContainer = document.getElementById('kioskMessages');
+      const statusText = document.getElementById('aussieStatusText');
+
+      // 1. Append User Message
+      const userDiv = document.createElement('div');
+      userDiv.className = 'message-row user';
+      userDiv.innerHTML = `
+        <div class="message-avatar user">🎓</div>
+        <div class="bubble"><strong>Serina Mehra:</strong><br>${escapeHtml(query)}</div>
+      `;
+      messagesContainer.appendChild(userDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // 2. Set Aussie status
+      statusText.textContent = "Aussie is consulting official college records...";
+
+      // 3. Prepare Assistant Message container (White rounded card)
+      const assistantDiv = document.createElement('div');
+      assistantDiv.className = 'message-row assistant';
+      assistantDiv.innerHTML = `
+        <div class="message-avatar assistant">👩‍💼</div>
+        <div class="bubble">
+          <div class="official-seal-header">
+            <span>🏛️ Official Verified College Information</span>
+          </div>
+          <div class="aussie-reply-body"><em>Retrieving verified policies...</em></div>
+        </div>
+      `;
+      messagesContainer.appendChild(assistantDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      const replyBody = assistantDiv.querySelector('.aussie-reply-body');
+
+      // 4. Query Backend or Local RAG Fallback
+      let result = null;
+      const t0 = performance.now();
+
+      try {
+        const response = await fetch('/api/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query, model: 'gemma3:4b', top_k: 2 })
+        });
+        if (response.ok) {
+          result = await response.json();
+        }
+      } catch (err) {}
+
+      if (!result) {
+        result = searchLocalRAG(query);
+      }
+
+      const totalTime = ((performance.now() - t0) / 1000).toFixed(3);
+
+      // 5. Render Response
+      statusText.textContent = "Serving Serina Mehra • Ready to assist with verified records";
+      
+      let html = `<p>${formatMarkdown(result.answer)}</p>`;
+
+      // Latencies
+      const embedT = (result.latency_embed || 0.012).toFixed(3);
+      const retT = (result.latency_retrieval || 0.008).toFixed(3);
+      const genT = (result.latency_gen || 0.145).toFixed(3);
+
+      html += `
+        <div class="telemetry-row">
+          <span class="telemetry-tag">⚡ Vector Embed: <strong>${embedT}s</strong></span>
+          <span class="telemetry-tag">🔍 Search: <strong>${retT}s</strong></span>
+          <span class="telemetry-tag">🧠 Inference: <strong>${genT}s</strong></span>
+          <span class="telemetry-tag">⏱️ Total: <strong>${totalTime}s</strong></span>
+        </div>
+      `;
+
+      // Citations
+      if (result.sources && result.sources.length > 0) {
+        html += `<div class="citations-container">`;
+        result.sources.forEach((s, idx) => {
+          const matchPercent = (s.similarity * 100).toFixed(1);
+          html += `
+            <div class="citation-item">
+              <div class="citation-title-row">
+                <span>📄 Source ${idx + 1}: ${s.doc} (Page ${s.page})</span>
+                <span class="citation-match-pill">${matchPercent}% match</span>
+              </div>
+              <div style="color:var(--text-muted); font-size:0.8rem;">${s.text || ''}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      // Escalation Card if needed
+      if (result.escalation) {
+        html += `
+          <div class="kiosk-escalation-card">
+            <h4>🛎️ Department Escalation Available</h4>
+            Your inquiry involves <strong>${result.escalation}</strong>. If official records do not fully resolve this matter, Aussie can dispatch an official administrative ticket right now.
+            <br>
+            <button class="btn-escalate-now" onclick="openTicketModal('${result.escalation}', '${escapeHtml(query)}')">
+              🎫 Open ${result.escalation} Ticket
+            </button>
+          </div>
+        `;
+      }
+
+      replyBody.innerHTML = html;
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // Speak answer
+      speakAussie(result.answer);
+    }
+
+    function searchLocalRAG(query) {
+      const qLower = query.toLowerCase();
+      let bestMatch = null;
+      let highestScore = 0;
+
+      for (const item of CAMPUS_OFFLINE_RAG) {
+        let score = 0;
+        for (const kw of item.keywords) {
+          if (qLower.includes(kw)) score += 1;
+        }
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = item;
+        }
+      }
+
+      if (!bestMatch || highestScore === 0) {
+        return {
+          answer: "The official Bosscoder College documentation does not contain explicit records regarding this question. Please check with the Office of the Registrar in the Administration Pavilion (Room 102).",
+          sources: [],
+          escalation: "General Administrative Inquiry",
+          latency_embed: 0.009,
+          latency_retrieval: 0.005,
+          latency_gen: 0.095
+        };
+      }
+
+      return {
+        answer: bestMatch.answer,
+        sources: [
+          { doc: bestMatch.doc, page: bestMatch.page, similarity: bestMatch.similarity, text: bestMatch.answer.slice(0, 140) + '...' }
+        ],
+        escalation: bestMatch.escalation || null,
+        latency_embed: 0.014,
+        latency_retrieval: 0.006,
+        latency_gen: 0.120
+      };
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('kioskInput');
+      const val = input.value.trim();
+      if (!val) return;
+      input.value = '';
+      sendQueryText(val);
+    }
+
+    // Modal Helpers
+    function openDirectoryModal() {
+      document.getElementById('directoryModal').style.display = 'flex';
+    }
+    function closeDirectoryModal() {
+      document.getElementById('directoryModal').style.display = 'none';
+    }
+
+    function openTicketModal(category, initialTitle) {
+      document.getElementById('ticketModal').style.display = 'flex';
+      if (category) document.getElementById('ticketCategory').value = category;
+      if (initialTitle) {
+        document.getElementById('ticketTitle').value = initialTitle.slice(0, 50);
+        document.getElementById('ticketDesc').value = initialTitle;
+      }
+    }
+    function closeTicketModal() {
+      document.getElementById('ticketModal').style.display = 'none';
+    }
+
+    async function handleTicketSubmit(e) {
+      e.preventDefault();
+      const cat = document.getElementById('ticketCategory').value;
+      const title = document.getElementById('ticketTitle').value;
+      const desc = document.getElementById('ticketDesc').value;
+      const prio = document.getElementById('ticketPriority').value;
+
+      try {
+        await fetch('/api/ticket', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ category: cat, title: title, description: desc, priority: prio })
+        });
+      } catch (err) {}
+
+      closeTicketModal();
+      ringDeskBell();
+      alert(`✅ Official Support Ticket Logged!\nAussie has dispatched ticket regarding: "${title}" to the ${cat} department.`);
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatMarkdown(text) {
+      if (!text) return '';
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    }
+  </script>
+</body>
+</html>

@@ -6,7 +6,7 @@ Author: Krishna Verma (LLM & Backend Integrator) & Sachita (Full-Stack & UI/UX D
 Provides:
 - SQLite persistent identity store (`data/db/querycampus.db`) with `users` and `user_sessions` tables.
 - Supabase Cloud PostgreSQL integration with Row-Level Security (RLS) and real-time syncing.
-- Institutional domain verification (`@university.edu`, `@pesu.pes.edu`, `@pes.edu`, `@college.ac.in`) and USN validation.
+- Institutional domain verification (`@university.edu`, `@pesu.pes.edu`, `@pes.edu`, `@college.ac.in`, `@bosscoder.edu`).
 - Role-Based Access Control (RBAC) engine for Student and Administrator roles.
 - 1-Click Judge Persona Switcher for hackathon evaluation and zero-downtime demoing.
 - UI rendering components for Streamlit frontend (`render_judge_switcher`, `render_auth_sidebar`).
@@ -35,6 +35,7 @@ ALLOWED_INSTITUTIONAL_DOMAINS = (
     "university.org",
     "pesu.pes.edu",
     "pes.edu",
+    "bosscoder.edu",
 )
 
 
@@ -149,6 +150,19 @@ JUDGE_PERSONAS: Dict[str, Dict[str, Any]] = {
         "avatar_emoji": "🎓",
         "bio": "3rd-Year student needing attendance policies, exam schedules, and hostel curfew verification.",
     },
+    "serina": {
+        "usn": "BC-2024-CS108",
+        "email": "serina.mehra@bosscoder.edu",
+        "password": "password123",
+        "name": "Serina Mehra",
+        "role": "Student",
+        "department": "Computer Science & Engineering",
+        "semester": "4th Semester",
+        "id_number": "BC-2024-CS108",
+        "badge_label": "Enrolled Undergraduate",
+        "avatar_emoji": "🎓",
+        "bio": "Bosscoder College student inquiring about course curriculum, placement statistics, and attendance rules.",
+    },
     "aarav": {
         "usn": "1MS26CS042",
         "email": "aarav.cs26@university.edu",
@@ -203,6 +217,34 @@ JUDGE_PERSONAS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+# Backward compatibility mapping for legacy tests and mock authentication
+MOCK_USERS: Dict[str, Dict[str, str]] = {
+    "serina.mehra@bosscoder.edu": {
+        "password": "password123",
+        "name": "Serina Mehra",
+        "role": "student",
+        "department": "Computer Science & Engineering",
+        "id_number": "BC-2024-CS108",
+        "usn": "BC-2024-CS108",
+    },
+    "student@pesu.pes.edu": {
+        "password": "password123",
+        "name": "Alex Sharma",
+        "role": "student",
+        "department": "Computer Science & Engineering",
+        "id_number": "PES2UG22CS001",
+        "usn": "PES2UG22CS001",
+    },
+    "admin@pesu.pes.edu": {
+        "password": "adminpassword",
+        "name": "Dr. V. Ramanathan",
+        "role": "admin",
+        "department": "Office of Academic Affairs & Administration",
+        "id_number": "ADM-PES-042",
+        "usn": "ADM-PES-042",
+    },
+}
+
 
 # ---------------------------------------------------------------------------
 # DOMAIN VALIDATOR & RBAC PERMISSION HELPERS
@@ -211,7 +253,7 @@ JUDGE_PERSONAS: Dict[str, Dict[str, Any]] = {
 def is_valid_institutional_domain(email: str) -> bool:
     """
     Validates that an email belongs to a sanctioned institutional domain
-    (@university.edu, @college.ac.in, @university.org, @pesu.pes.edu, @pes.edu).
+    (@university.edu, @college.ac.in, @university.org, @pesu.pes.edu, @pes.edu, @bosscoder.edu).
     """
     if not email or "@" not in email:
         return False
@@ -231,7 +273,7 @@ validate_institutional_email = is_valid_institutional_domain
 
 
 def validate_usn(usn: str) -> bool:
-    """Validates institutional USN format (e.g. PES2UG22CS001, 1MS26CS042, ADM-PES-042)."""
+    """Validates institutional USN format (e.g. PES2UG22CS001, 1MS26CS042, ADM-PES-042, BC-2024-CS108)."""
     if not usn or not isinstance(usn, str):
         return False
     clean = usn.strip()
@@ -494,7 +536,7 @@ def authenticate_user(
     db_path: Optional[Path] = None,
 ) -> Optional[User]:
     """
-    Verifies user credentials against Judge Personas, SQLite identity store,
+    Verifies user credentials against Judge Personas, MOCK_USERS, SQLite identity store,
     and Supabase cloud. Returns User object on success, None on failure.
     """
     cleaned_id = identifier.strip().lower()
@@ -502,7 +544,7 @@ def authenticate_user(
     # 1. Check pre-configured Judge Personas
     for persona_key, data in JUDGE_PERSONAS.items():
         if (data["email"].lower() == cleaned_id or data["usn"].lower() == cleaned_id):
-            if password is not None and data["password"] != password:
+            if password is not None and data.get("password") != password:
                 return None
             return User(
                 usn=data["usn"],
@@ -512,9 +554,23 @@ def authenticate_user(
                 role=RoleStr(data["role"].capitalize()),
                 department=data["department"],
                 semester=data.get("semester"),
-                badge_label=data["badge_label"],
-                avatar_emoji=data["avatar_emoji"],
+                badge_label=data.get("badge_label", "Student"),
+                avatar_emoji=data.get("avatar_emoji", "🎓"),
             )
+
+    # Check MOCK_USERS mapping
+    if cleaned_id in MOCK_USERS:
+        m = MOCK_USERS[cleaned_id]
+        if password is not None and m["password"] != password:
+            return None
+        return User(
+            usn=m.get("usn", m["id_number"]),
+            id_number=m["id_number"],
+            email=cleaned_id,
+            name=m["name"],
+            role=RoleStr(m["role"].capitalize()),
+            department=m["department"],
+        )
 
     # 2. Check SQLite Identity Store
     target_path = Path(db_path or DB_PATH)
@@ -526,7 +582,6 @@ def authenticate_user(
         )
         row = cursor.fetchone()
         if row:
-            # Update last_login
             conn.execute(
                 "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE usn = ?",
                 (row["usn"],),
@@ -732,6 +787,16 @@ def get_demo_user(role_or_key: str = "student") -> User:
         data = JUDGE_PERSONAS[key]
     elif key == "admin":
         data = JUDGE_PERSONAS["admin"]
+    elif key in MOCK_USERS:
+        m = MOCK_USERS[key]
+        return User(
+            usn=m.get("usn", m["id_number"]),
+            id_number=m["id_number"],
+            email=key,
+            name=m["name"],
+            role=RoleStr(m["role"].capitalize()),
+            department=m["department"],
+        )
     else:
         data = JUDGE_PERSONAS["student"]
 
@@ -743,8 +808,8 @@ def get_demo_user(role_or_key: str = "student") -> User:
         role=RoleStr(data["role"].capitalize()),
         department=data["department"],
         semester=data.get("semester"),
-        badge_label=data["badge_label"],
-        avatar_emoji=data["avatar_emoji"],
+        badge_label=data.get("badge_label", "Student"),
+        avatar_emoji=data.get("avatar_emoji", "🎓"),
     )
 
 
@@ -757,6 +822,6 @@ def get_judge_switcher_options() -> List[Dict[str, Any]]:
             "label": f"{val['avatar_emoji']} {val['name']} ({val['role'].capitalize()})",
             "role": val["role"],
             "department": val["department"],
-            "bio": val["bio"],
+            "bio": val.get("bio", ""),
         })
     return options
