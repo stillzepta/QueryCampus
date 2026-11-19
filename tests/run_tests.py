@@ -15,9 +15,11 @@ if "pytest" not in sys.modules:
     class RaisesContext:
         def __init__(self, expected_exc):
             self.expected_exc = expected_exc
+            self.value = None
         def __enter__(self):
             return self
         def __exit__(self, exc_type, exc_val, exc_tb):
+            self.value = exc_val
             if exc_type is None:
                 raise AssertionError(f"Expected {self.expected_exc} was not raised.")
             return issubclass(exc_type, self.expected_exc)
@@ -35,7 +37,9 @@ def run():
         "test_ingest",
         "test_vector_store",
         "test_retrieval",
-        "test_generator"
+        "test_generator",
+        "test_backend_interface",
+        "test_vercel_entrypoint"
     ]
 
     passed = 0
